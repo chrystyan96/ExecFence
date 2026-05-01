@@ -18,13 +18,19 @@ Initialize common project hooks:
 npx --yes security-guardrails init
 ```
 
-Install the bundled Codex skill and automatically update global `AGENTS.md` with the guardrails rule:
+Install the bundled Codex skill and automatically update global agent instructions:
 
 ```sh
 npx --yes security-guardrails install-skill
 ```
 
-Print the AGENTS.md snippet:
+Install portable rules for non-Codex agents in a project:
+
+```sh
+npx --yes security-guardrails install-agent-rules --scope project
+```
+
+Print the portable instruction snippet:
 
 ```sh
 npx --yes security-guardrails print-agents-snippet
@@ -66,7 +72,8 @@ The scanner ignores normal dependency/build/cache folders:
 security-guardrails scan [paths...]
 security-guardrails init
 security-guardrails detect
-security-guardrails install-skill [--codex-home <path>]
+security-guardrails install-skill [--codex-home <path>] [--home <path>]
+security-guardrails install-agent-rules [--scope global|project|both] [--home <path>] [--project <path>]
 security-guardrails print-agents-snippet
 ```
 
@@ -74,6 +81,18 @@ security-guardrails print-agents-snippet
 
 - `<codex-home>/skills/security-guardrails/SKILL.md`
 - `<codex-home>/AGENTS.md`, inserting or replacing a marker-bounded `Security Guardrails` section
+- `<home>/.codex/AGENTS.md`
+- `<home>/.claude/CLAUDE.md`
+- `<home>/.gemini/GEMINI.md`
+
+`install-agent-rules --scope project` writes portable project-level instruction files:
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `GEMINI.md`
+- `.cursor/rules/security-guardrails.mdc`
+
+`install-agent-rules --scope both` writes both global and project-level rules.
 
 ## Publishing
 

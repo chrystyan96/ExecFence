@@ -6,40 +6,73 @@ const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const { installSkill, updateGlobalAgents } = require('../lib/cli');
+const {
+  installAgentRules,
+  installGlobalAgentRules,
+  installProjectAgentRules,
+} = require('../lib/agent-rules');
 
-test('installSkill copies skill and updates AGENTS.md', () => {
+test('installSkill copies Codex skill and updates global agent files', () => {
   const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-codex-'));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-home-'));
 
-  installSkill(['--codex-home', codexHome]);
+  installSkill(['--codex-home', codexHome, '--home', home]);
 
   const skillPath = path.join(codexHome, 'skills', 'security-guardrails', 'SKILL.md');
-  const agentsPath = path.join(codexHome, 'AGENTS.md');
   assert.equal(fs.existsSync(skillPath), true);
-  const agents = fs.readFileSync(agentsPath, 'utf8');
+  const agents = fs.readFileSync(path.join(codexHome, 'AGENTS.md'), 'utf8');
   assert.match(agents, /SECURITY-GUARDRAILS:START/);
-  assert.match(agents, /\$security-guardrails/);
+  assert.equal(fs.existsSync(path.join(home, '.claude', 'CLAUDE.md')), true);
+  assert.equal(fs.existsSync(path.join(home, '.gemini', 'GEMINI.md')), true);
 });
 
-test('updateGlobalAgents is idempotent', () => {
-  const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-agents-'));
-  fs.writeFileSync(path.join(codexHome, 'AGENTS.md'), '# Existing\n\nKeep this.\n');
+test('installGlobalAgentRules is idempotent', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-agents-'));
+  const codexAgents = path.join(home, '.codex', 'AGENTS.md');
+  fs.mkdirSync(path.dirname(codexAgents), { recursive: true });
+  fs.writeFileSync(codexAgents, '# Existing\n\nKeep this.\n');
 
-  updateGlobalAgents(codexHome);
-  updateGlobalAgents(codexHome);
+  installGlobalAgentRules({ home });
+  installGlobalAgentRules({ home });
 
-  const agents = fs.readFileSync(path.join(codexHome, 'AGENTS.md'), 'utf8');
+  const agents = fs.readFileSync(codexAgents, 'utf8');
   assert.equal((agents.match(/SECURITY-GUARDRAILS:START/g) || []).length, 1);
   assert.match(agents, /# Existing/);
   assert.match(agents, /Keep this\./);
 });
 
-test('updateGlobalAgents does not duplicate an existing manual guardrails rule', () => {
+test('installGlobalAgentRules does not duplicate an existing manual guardrails rule', () => {
   const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-existing-'));
-  fs.writeFileSync(path.join(codexHome, 'AGENTS.md'), '- Use `$security-guardrails` for persistent projects.\n');
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-home-existing-'));
+  fs.mkdirSync(path.join(home, '.codex'), { recursive: true });
+  fs.writeFileSync(path.join(home, '.codex', 'AGENTS.md'), '- Use `security-guardrails` for persistent projects.\n');
 
-  updateGlobalAgents(codexHome);
+  installGlobalAgentRules({ home });
 
-  const agents = fs.readFileSync(path.join(codexHome, 'AGENTS.md'), 'utf8');
-  assert.equal((agents.match(/\$security-guardrails/g) || []).length, 1);
+  const agents = fs.readFileSync(path.join(home, '.codex', 'AGENTS.md'), 'utf8');
+  assert.equal((agents.match(/security-guardrails/g) || []).length, 1);
   assert.equal((agents.match(/SECURITY-GUARDRAILS:START/g) || []).length, 0);
+  assert.equal(fs.existsSync(path.join(codexHome, 'AGENTS.md')), false);
+});
+
+test('installProjectAgentRules writes common agent instruction files', () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-project-'));
+
+  installProjectAgentRules({ project });
+
+  assert.equal(fs.existsSync(path.join(project, 'AGENTS.md')), true);
+  assert.equal(fs.existsSync(path.join(project, 'CLAUDE.md')), true);
+  assert.equal(fs.existsSync(path.join(project, 'GEMINI.md')), true);
+  assert.equal(fs.existsSync(path.join(project, '.cursor', 'rules', 'security-guardrails.mdc')), true);
+});
+
+test('installAgentRules supports both global and project scopes', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-both-home-'));
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-both-project-'));
+
+  const results = installAgentRules({ scope: 'both', home, project });
+
+  assert.ok(results.length >= 7);
+  assert.equal(fs.existsSync(path.join(home, '.claude', 'CLAUDE.md')), true);
+  assert.equal(fs.existsSync(path.join(project, 'CLAUDE.md')), true);
 });
