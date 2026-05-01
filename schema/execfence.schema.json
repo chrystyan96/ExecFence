@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails.schema.json",
-  "title": "security-guardrails configuration",
-  "description": "Project-level policy for security-guardrails scans, reports, baseline exceptions, and stack-aware guardrail behavior.",
+  "$id": "https://raw.githubusercontent.com/chrystyan96/execfence/master/schema/execfence.schema.json",
+  "title": "execfence configuration",
+  "description": "Project-level policy for execfence scans, reports, baseline exceptions, and stack-aware guardrail behavior.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -78,12 +78,42 @@
     "signaturesFile": {
       "description": "Path to a project/team external signatures JSON file.",
       "type": "string",
-      "default": ".security-guardrails.signatures.json"
+      "default": ".execfence/config/signatures.json"
     },
     "baselineFile": {
       "description": "Path to a reviewed baseline/exceptions JSON file.",
       "type": "string",
-      "default": ".security-guardrails.baseline.json"
+      "default": ".execfence/config/baseline.json"
+    },
+    "reportsDir": {
+      "description": "Directory for automatic JSON evidence reports.",
+      "type": "string",
+      "default": ".execfence/reports"
+    },
+    "reportsGitignore": {
+      "description": "When true, ExecFence keeps the reports directory ignored by git.",
+      "type": "boolean",
+      "default": true
+    },
+    "analysis": {
+      "description": "Analysis and optional enrichment settings for report generation.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "webEnrichment": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": false },
+            "maxQueriesPerFinding": { "type": "integer", "minimum": 0, "default": 3 },
+            "allowedDomains": {
+              "type": "array",
+              "items": { "type": "string" },
+              "default": []
+            }
+          }
+        }
+      }
     },
     "workflowHardening": {
       "description": "Enable GitHub Actions hardening checks.",

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails.schema.json",
+  "$schema": "https://raw.githubusercontent.com/chrystyan96/execfence/master/schema/execfence.schema.json",
   "policyPack": "baseline",
   "mode": "block",
   "blockSeverities": ["critical", "high"],
@@ -16,8 +16,17 @@
   ],
   "extraSignatures": ["project-specific-bad-marker"],
   "extraRegexSignatures": ["project-bad-[0-9]+"],
-  "signaturesFile": ".security-guardrails.signatures.json",
-  "baselineFile": ".security-guardrails.baseline.json",
+  "signaturesFile": ".execfence/config/signatures.json",
+  "baselineFile": ".execfence/config/baseline.json",
+  "reportsDir": ".execfence/reports",
+  "reportsGitignore": true,
+  "analysis": {
+    "webEnrichment": {
+      "enabled": false,
+      "maxQueriesPerFinding": 3,
+      "allowedDomains": []
+    }
+  },
   "workflowHardening": true,
   "archiveAudit": true,
   "auditAllPackageScripts": false

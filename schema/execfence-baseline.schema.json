@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails-baseline.schema.json",
-  "title": "security-guardrails reviewed baseline",
+  "$id": "https://raw.githubusercontent.com/chrystyan96/execfence/master/schema/execfence-baseline.schema.json",
+  "title": "execfence reviewed baseline",
   "description": "Reviewed exceptions for existing findings. Baseline entries should be owned, justified, hash-pinned when possible, and time-bound.",
   "type": "object",
   "additionalProperties": false,

@@ -14,7 +14,7 @@ function git(cwd, args) {
 }
 
 test('changedFiles returns modified and untracked files', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-git-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-git-'));
   git(root, ['init']);
   git(root, ['config', 'user.email', 'test@example.com']);
   git(root, ['config', 'user.name', 'Test']);
@@ -30,7 +30,7 @@ test('changedFiles returns modified and untracked files', () => {
 });
 
 test('scanHistory finds injected signature in previous commits', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-history-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-history-'));
   git(root, ['init']);
   git(root, ['config', 'user.email', 'test@example.com']);
   git(root, ['config', 'user.name', 'Test']);
@@ -45,13 +45,13 @@ test('scanHistory finds injected signature in previous commits', () => {
 });
 
 test('installGitHook writes an idempotent pre-commit hook', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-hook-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-hook-'));
   git(root, ['init']);
 
   const hookPath = installGitHook(root);
   installGitHook(root);
 
   const hook = fs.readFileSync(hookPath, 'utf8');
-  assert.equal((hook.match(/security-guardrails:start/g) || []).length, 1);
+  assert.equal((hook.match(/execfence:start/g) || []).length, 1);
   assert.match(hook, /diff-scan --staged/);
 });

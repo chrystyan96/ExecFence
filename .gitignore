@@ -2,4 +2,5 @@ node_modules/
 coverage/
 *.log
 *.tgz
+.execfence/reports/
 .DS_Store

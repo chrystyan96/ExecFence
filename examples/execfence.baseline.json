@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails-baseline.schema.json",
+  "$schema": "https://raw.githubusercontent.com/chrystyan96/execfence/master/schema/execfence-baseline.schema.json",
   "findings": [
     {
       "findingId": "suspicious-package-script",

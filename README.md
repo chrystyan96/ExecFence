@@ -1,6 +1,6 @@
-# security-guardrails
+# ExecFence
 
-Stack-aware malware and supply-chain guardrails for persistent web, desktop, backend, and local-agent projects.
+Execution-fence guardrails for persistent web, desktop, backend, and local-agent projects.
 
 It is a small dependency-free CLI intended to fail fast before dev/build/test/CI when a repository contains known injected payloads, suspicious executable configuration, autostart tasks, or unexpected binaries in source/build-input folders.
 
@@ -9,32 +9,32 @@ It is a small dependency-free CLI intended to fail fast before dev/build/test/CI
 Run a scan without installing:
 
 ```sh
-npx --yes security-guardrails scan
-npx --yes security-guardrails scan --mode audit
+npx --yes execfence scan
+npx --yes execfence scan --mode audit
 ```
 
 Initialize common project hooks:
 
 ```sh
-npx --yes security-guardrails init --preset auto
+npx --yes execfence init --preset auto
 ```
 
 Install the bundled Codex skill and automatically update global agent instructions:
 
 ```sh
-npx --yes security-guardrails install-skill
+npx --yes execfence install-skill
 ```
 
 Install portable rules for non-Codex agents in a project:
 
 ```sh
-npx --yes security-guardrails install-agent-rules --scope project
+npx --yes execfence install-agent-rules --scope project
 ```
 
 Print the portable instruction snippet:
 
 ```sh
-npx --yes security-guardrails print-agents-snippet
+npx --yes execfence print-agents-snippet
 ```
 
 ## What It Blocks
@@ -71,50 +71,51 @@ The scanner ignores normal dependency/build/cache folders:
 ## Commands
 
 ```sh
-security-guardrails scan [paths...]
-security-guardrails scan [--mode block|audit] [--fail-on critical,high] [--changed-only] [--full-ioc-scan] [--report <dir>] --ci [--format text|json|sarif] [paths...]
-security-guardrails diff-scan [--staged] [--mode block|audit]
-security-guardrails scan-history [--max-commits <n>] [--format text|json|sarif] [--include-self]
-security-guardrails coverage [--format text|json]
-security-guardrails report [--dir <dir>] [paths...]
-security-guardrails doctor
-security-guardrails explain <finding-id>
-security-guardrails init [--preset auto|node|go|tauri|python|rust] [--dry-run]
-security-guardrails detect
-security-guardrails install-hooks
-security-guardrails install-skill [--codex-home <path>] [--home <path>]
-security-guardrails install-agent-rules [--scope global|project|both] [--verify] [--home <path>] [--project <path>]
-security-guardrails publish [--real]
-security-guardrails print-agents-snippet
+execfence scan [paths...]
+execfence scan [--mode block|audit] [--fail-on critical,high] [--changed-only] [--full-ioc-scan] [--report <dir>] --ci [--format text|json|sarif] [paths...]
+execfence diff-scan [--staged] [--mode block|audit]
+execfence scan-history [--max-commits <n>] [--format text|json|sarif] [--include-self]
+execfence coverage [--format text|json]
+execfence report [--dir <dir>] [paths...]
+execfence doctor
+execfence explain <finding-id>
+execfence init [--preset auto|node|go|tauri|python|rust] [--dry-run]
+execfence detect
+execfence install-hooks
+execfence install-skill [--codex-home <path>] [--home <path>]
+execfence install-agent-rules [--scope global|project|both] [--verify] [--home <path>] [--project <path>]
+execfence publish [--real]
+execfence print-agents-snippet
 ```
 
 ## Files, Logs, and Configuration
 
-`security-guardrails` does not keep a global log or background daemon. Normal command output goes to the terminal or CI log. Durable evidence is written only when the user requests a report.
+`execfence` does not keep a background daemon. Normal command output goes to the terminal or CI log. Every blocking-capable scan command writes a new structured JSON evidence report under `.execfence/reports/`.
 
 Project-level files:
 
 | File or directory | Created by | Purpose |
 | --- | --- | --- |
-| `.security-guardrails.json` | `init` | Main project policy: mode, severities, roots, policy pack, allowlists, custom signatures, and feature toggles. |
-| `.security-guardrails.signatures.json` | user/team | Optional project IoCs and regex detections. The path is configurable with `signaturesFile`. |
-| `.security-guardrails.baseline.json` | user/team | Optional reviewed exceptions for existing findings. The path is configurable with `baselineFile`. |
-| `security-guardrails-report/report.json` | `scan --report` or `report` | Machine-readable evidence bundle with findings, hashes, snippets, git blame, recent commits, command, and config path. |
-| `security-guardrails-report/report.md` | `scan --report` or `report` | Human-readable incident or CI evidence summary. |
+| `.execfence/config/execfence.json` | `init` | Main project policy: mode, severities, roots, policy pack, reports, allowlists, custom signatures, and feature toggles. |
+| `.execfence/config/signatures.json` | `init` / user/team | Optional project IoCs and regex detections. The path is configurable with `signaturesFile`. |
+| `.execfence/config/baseline.json` | `init` / user/team | Optional reviewed exceptions for existing findings. The path is configurable with `baselineFile`. |
+| `.execfence/reports/<project>_<datetime>.json` | `scan`, `diff-scan`, `scan-history`, `doctor`, or `report` | Machine-readable evidence bundle with findings, hashes, snippets, git blame, recent commits, command, config, local analysis, and research queries. |
+| `.gitignore` | `init` / scan commands | Keeps `.execfence/reports/` out of git unless `reportsGitignore` is `false`. |
 | `.git/hooks/pre-commit` | `install-hooks` | Local pre-commit scan hook. |
 | agent instruction files | `install-agent-rules` / `install-skill` | Portable instructions for Codex, Claude, Gemini, Cursor, Copilot, Continue, Windsurf, Aider, Roo, and Cline. |
+| `<home>/.agents/skills/execfence/defaults.json` | `install-skill` | Read-only global defaults for agents and the skill; project config wins. |
 
-The default report directory is `security-guardrails-report` under the project root and is ignored by future scans. If you use a custom report directory inside the repository, add that directory name to `ignoreDirs`.
+The default report directory is `.execfence/reports` under the project root. ExecFence ignores `.execfence/` during scans so report bundles and config IoCs do not poison later scan output.
 
 Copyable examples are available in `examples/`. JSON schemas are published under `schema/` for the main config, external signatures, and reviewed baseline files.
 
 ## Configuration
 
-`init` creates `.security-guardrails.json` when one does not exist:
+`init` creates `.execfence/config/execfence.json`, `.execfence/config/signatures.json`, `.execfence/config/baseline.json`, and `.execfence/reports/` when they do not exist:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails.schema.json",
+  "$schema": "https://raw.githubusercontent.com/chrystyan96/execfence/master/schema/execfence.schema.json",
   "policyPack": "baseline",
   "mode": "block",
   "blockSeverities": ["critical", "high"],
@@ -127,8 +128,17 @@ Copyable examples are available in `examples/`. JSON schemas are published under
   ],
   "extraSignatures": [],
   "extraRegexSignatures": [],
-  "signaturesFile": ".security-guardrails.signatures.json",
-  "baselineFile": ".security-guardrails.baseline.json",
+  "signaturesFile": ".execfence/config/signatures.json",
+  "baselineFile": ".execfence/config/baseline.json",
+  "reportsDir": ".execfence/reports",
+  "reportsGitignore": true,
+  "analysis": {
+    "webEnrichment": {
+      "enabled": false,
+      "maxQueriesPerFinding": 3,
+      "allowedDomains": []
+    }
+  },
   "auditAllPackageScripts": false
 }
 ```
@@ -149,6 +159,9 @@ Configurable fields:
 | `extraRegexSignatures` | Reviewed regex detections for project-specific patterns. |
 | `signaturesFile` | Path to an external signatures JSON file. |
 | `baselineFile` | Path to a reviewed baseline/exceptions JSON file. |
+| `reportsDir` | Directory for automatic JSON evidence reports. |
+| `reportsGitignore` | Whether ExecFence keeps the reports directory in `.gitignore`. |
+| `analysis.webEnrichment` | Opt-in settings for agent/web enrichment; CLI reports still include local analysis and search queries offline. |
 | `workflowHardening` | Enables/disables GitHub Actions hardening checks. |
 | `archiveAudit` | Enables/disables source-tree archive checks for `.zip`, `.tar`, `.tgz`, and `.asar`. |
 | `auditAllPackageScripts` | Audits all package scripts instead of only install/prepare lifecycle scripts. |
@@ -157,11 +170,11 @@ Use `allowExecutables` sparingly for reviewed binaries that are intentionally co
 Prefer `{ "path": "...", "sha256": "..." }` entries so a reviewed binary cannot be silently replaced.
 Use `extraSignatures` for literal project-specific IoCs and `extraRegexSignatures` for reviewed regex detections.
 
-For larger teams, keep project-specific detections in `.security-guardrails.signatures.json`:
+For larger teams, keep project-specific detections in `.execfence/config/signatures.json`:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails-signatures.schema.json",
+  "$schema": "https://raw.githubusercontent.com/chrystyan96/execfence/master/schema/execfence-signatures.schema.json",
   "exact": [{ "id": "team-ioc", "value": "bad-domain.example" }],
   "regex": [{ "id": "team-wallet-marker", "pattern": "wallet-[0-9]+" }]
 }
@@ -171,11 +184,11 @@ For larger teams, keep project-specific detections in `.security-guardrails.sign
 
 Policy packs are available for `baseline`, `web`, `desktop`, `node`, `go`, `python`, `rust`, `agentic`, and `strict`.
 
-Use `.security-guardrails.baseline.json` to suppress reviewed existing findings without weakening future detections:
+Use `.execfence/config/baseline.json` to suppress reviewed existing findings without weakening future detections:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails-baseline.schema.json",
+  "$schema": "https://raw.githubusercontent.com/chrystyan96/execfence/master/schema/execfence-baseline.schema.json",
   "findings": [
     {
       "findingId": "suspicious-package-script",
@@ -195,18 +208,18 @@ Use `.security-guardrails.baseline.json` to suppress reviewed existing findings 
 
 Current integrations:
 
-- Node: adds `security:guardrails` and prepends existing `prestart`, `prebuild`, `pretest`, and `prewatch` hooks.
+- Node: adds `execfence:scan` and prepends existing `prestart`, `prebuild`, `pretest`, and `prewatch` hooks.
 - Go: adds a guarded `Makefile` target when requested and wires `build`, `test`, `test-race`, and `vet`.
 - Python: adds a pytest guard test when `pyproject.toml` is present.
-- GitHub Actions: adds `.github/workflows/security-guardrails.yml` when workflows already exist.
+- GitHub Actions: adds `.github/workflows/execfence.yml` when workflows already exist.
 
 ## CI Output
 
 Use JSON or SARIF in CI:
 
 ```sh
-npx --yes security-guardrails scan --ci --format json
-npx --yes security-guardrails scan --ci --format sarif > security-guardrails.sarif
+npx --yes execfence scan --ci --format json
+npx --yes execfence scan --ci --format sarif > execfence.sarif
 ```
 
 The repository includes `.github/workflows/ci.yml`, which runs tests, scan, SARIF generation, and package dry-run on Ubuntu, Windows, and macOS. `.github/workflows/scorecard.yml` runs OpenSSF Scorecard as an optional repository-health signal.
@@ -216,14 +229,14 @@ The repository includes `.github/workflows/ci.yml`, which runs tests, scan, SARI
 Scan only changed files:
 
 ```sh
-npx --yes security-guardrails diff-scan
-npx --yes security-guardrails diff-scan --staged
+npx --yes execfence diff-scan
+npx --yes execfence diff-scan --staged
 ```
 
 Scan history for known IoCs:
 
 ```sh
-npx --yes security-guardrails scan-history --max-commits 1000
+npx --yes execfence scan-history --max-commits 1000
 ```
 
 When the package scans its own repository, history scanning skips documented signatures by default. Use `--include-self` when you intentionally want to audit the package's own signature history.
@@ -231,38 +244,41 @@ When the package scans its own repository, history scanning skips documented sig
 Install a pre-commit hook:
 
 ```sh
-npx --yes security-guardrails install-hooks
+npx --yes execfence install-hooks
 ```
 
 Explain a finding:
 
 ```sh
-npx --yes security-guardrails explain suspicious-package-script
+npx --yes execfence explain suspicious-package-script
 ```
 
 Check whether build/dev/test entrypoints are protected:
 
 ```sh
-npx --yes security-guardrails coverage
+npx --yes execfence coverage
 ```
 
-Generate an evidence bundle without deleting suspicious files:
+Generate or redirect an evidence bundle without deleting suspicious files. Scan commands also generate reports automatically:
 
 ```sh
-npx --yes security-guardrails scan --report security-guardrails-report
-npx --yes security-guardrails report --dir security-guardrails-report
+npx --yes execfence scan
+npx --yes execfence scan --report .execfence/reports
+npx --yes execfence report --dir .execfence/reports
 ```
 
 Verify the scanner blocks a temporary known-bad fixture in the current environment:
 
 ```sh
-npx --yes security-guardrails doctor
+npx --yes execfence doctor
 ```
 
 `install-skill` writes:
 
-- `<codex-home>/skills/security-guardrails/SKILL.md`
-- `<codex-home>/AGENTS.md`, inserting or replacing a marker-bounded `Security Guardrails` section
+- `<codex-home>/skills/execfence/SKILL.md`
+- `<codex-home>/skills/execfence/defaults.json`
+- `<codex-home>/AGENTS.md`, inserting or replacing a marker-bounded `ExecFence` section
+- `<home>/.agents/skills/execfence/defaults.json`
 - `<home>/.codex/AGENTS.md`
 - `<home>/.claude/CLAUDE.md`
 - `<home>/.gemini/GEMINI.md`
@@ -272,12 +288,12 @@ npx --yes security-guardrails doctor
 - `AGENTS.md`
 - `CLAUDE.md`
 - `GEMINI.md`
-- `.cursor/rules/security-guardrails.mdc`
+- `.cursor/rules/execfence.mdc`
 - `.github/copilot-instructions.md`
-- `.continue/rules/security-guardrails.md`
-- `.windsurf/rules/security-guardrails.md`
-- `.aider/security-guardrails.md`
-- `.roo/rules/security-guardrails.md`
+- `.continue/rules/execfence.md`
+- `.windsurf/rules/execfence.md`
+- `.aider/execfence.md`
+- `.roo/rules/execfence.md`
 - `.clinerules`
 
 `install-agent-rules --scope both` writes both global and project-level rules.
@@ -293,31 +309,31 @@ npm run scan
 npm pack --dry-run
 git init
 git add .
-git commit -m "Create security guardrails CLI"
+git commit -m "Create ExecFence CLI"
 git branch -M master
-git remote add origin https://github.com/chrystyan96/security-guardrails.git
+git remote add origin https://github.com/chrystyan96/execfence.git
 git push -u origin master
 npm publish --access public --provenance
 ```
 
-The repository includes `.github/workflows/release.yml` for manual npm releases. It bumps the requested version, updates `CHANGELOG.md`, creates the commit/tag, and publishes with provenance. Configure npm Trusted Publishing for `chrystyan96/security-guardrails` with workflow filename `release.yml`; npm will use OIDC and publish provenance for that workflow.
+The repository includes `.github/workflows/release.yml` for manual npm releases. It bumps the requested version, updates `CHANGELOG.md`, creates the commit/tag, and publishes with provenance. Configure npm Trusted Publishing for `chrystyan96/execfence` with workflow filename `release.yml`; npm will use OIDC and publish provenance for that workflow.
 
 The packaged helper runs the safe release checks:
 
 ```sh
-npx --yes security-guardrails publish
+npx --yes execfence publish
 ```
 
 After `npm login`, publish for real:
 
 ```sh
-npx --yes security-guardrails publish --real
+npx --yes execfence publish --real
 ```
 
 After publish, users can run:
 
 ```sh
-npx --yes security-guardrails scan
+npx --yes execfence scan
 ```
 
 ## Scope

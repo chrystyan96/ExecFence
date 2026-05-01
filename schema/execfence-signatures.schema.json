@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails-signatures.schema.json",
-  "title": "security-guardrails external signatures",
+  "$id": "https://raw.githubusercontent.com/chrystyan96/execfence/master/schema/execfence-signatures.schema.json",
+  "title": "execfence external signatures",
   "description": "Project or team-owned extra detections loaded through the signaturesFile setting.",
   "type": "object",
   "additionalProperties": false,

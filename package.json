@@ -1,12 +1,12 @@
 {
-  "name": "security-guardrails",
+  "name": "execfence",
   "version": "1.0.0",
-  "description": "Stack-aware malware and supply-chain guardrails plus portable agent instructions for persistent projects.",
+  "description": "ExecFence blocks suspicious code execution paths before build, dev, test, and CI.",
   "license": "Apache-2.0",
   "author": "Chrystyan Byrnes",
   "type": "commonjs",
   "bin": {
-    "security-guardrails": "bin/security-guardrails.js"
+    "execfence": "bin/execfence.js"
   },
   "files": [
     "bin/",
@@ -21,10 +21,10 @@
   "scripts": {
     "pretest": "npm run scan",
     "test": "node --test",
-    "scan": "node bin/security-guardrails.js scan .",
-    "coverage:guardrails": "node bin/security-guardrails.js coverage",
+    "scan": "node bin/execfence.js scan .",
+    "coverage:execfence": "node bin/execfence.js coverage",
     "check": "npm test && npm run scan",
-    "publish:dry": "node bin/security-guardrails.js publish",
+    "publish:dry": "node bin/execfence.js publish",
     "pack:dry": "npm pack --dry-run"
   },
   "keywords": [
@@ -40,17 +40,18 @@
     "npx",
     "tauri",
     "node",
-    "go"
+    "go",
+    "execfence"
   ],
   "engines": {
     "node": ">=18"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/chrystyan96/security-guardrails.git"
+    "url": "git+https://github.com/chrystyan96/execfence.git"
   },
   "bugs": {
-    "url": "https://github.com/chrystyan96/security-guardrails/issues"
+    "url": "https://github.com/chrystyan96/execfence/issues"
   },
-  "homepage": "https://github.com/chrystyan96/security-guardrails#readme"
+  "homepage": "https://github.com/chrystyan96/execfence#readme"
 }

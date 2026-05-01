@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails-signatures.schema.json",
+  "$schema": "https://raw.githubusercontent.com/chrystyan96/execfence/master/schema/execfence-signatures.schema.json",
   "exact": [
     {
       "id": "team-ioc",

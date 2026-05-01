@@ -27,7 +27,7 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run scan
-      - run: node bin/security-guardrails.js scan --ci --format sarif . > security-guardrails.sarif
+      - run: node bin/execfence.js scan --ci --format sarif . > execfence.sarif
       - run: npm version "${{ inputs.version }}" --no-git-tag-version
       - run: node scripts/update-changelog.cjs
       - run: |

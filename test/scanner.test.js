@@ -10,7 +10,7 @@ const { scan } = require('../lib/scanner');
 const { formatResult } = require('../lib/output');
 
 test('scan passes on a clean project', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-clean-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-clean-'));
   fs.mkdirSync(path.join(root, 'frontend'), { recursive: true });
   fs.writeFileSync(path.join(root, 'frontend', 'tailwind.config.js'), 'module.exports = { plugins: [] };\n');
 
@@ -21,7 +21,7 @@ test('scan passes on a clean project', () => {
 });
 
 test('scan blocks the known injected loader marker', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-bad-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-bad-'));
   fs.mkdirSync(path.join(root, 'frontend'), { recursive: true });
   fs.writeFileSync(path.join(root, 'frontend', 'tailwind.config.js'), "module.exports = {};\nglobal.i='2-30-4';\n");
 
@@ -32,7 +32,7 @@ test('scan blocks the known injected loader marker', () => {
 });
 
 test('scan ignores build output directories', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-ignore-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-ignore-'));
   fs.mkdirSync(path.join(root, 'desktop', 'src-tauri', 'target-release-codex'), { recursive: true });
   fs.writeFileSync(path.join(root, 'desktop', 'src-tauri', 'target-release-codex', 'app.exe'), 'binary');
 
@@ -42,7 +42,7 @@ test('scan ignores build output directories', () => {
 });
 
 test('scan blocks vscode folder-open autostart', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-vscode-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-vscode-'));
   fs.mkdirSync(path.join(root, '.vscode'), { recursive: true });
   fs.writeFileSync(path.join(root, '.vscode', 'tasks.json'), '{"runOn":"folderOpen"}\n');
 
@@ -53,9 +53,10 @@ test('scan blocks vscode folder-open autostart', () => {
 });
 
 test('scan honors config allowExecutables and extraSignatures', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-config-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-config-'));
   fs.mkdirSync(path.join(root, 'tools'), { recursive: true });
-  fs.writeFileSync(path.join(root, '.security-guardrails.json'), JSON.stringify({
+  fs.mkdirSync(path.join(root, '.execfence', 'config'), { recursive: true });
+  fs.writeFileSync(path.join(root, '.execfence', 'config', 'execfence.json'), JSON.stringify({
     roots: ['tools'],
     allowExecutables: ['tools/known-safe.exe'],
     extraSignatures: ['custom-bad-domain.example'],
@@ -71,12 +72,13 @@ test('scan honors config allowExecutables and extraSignatures', () => {
 });
 
 test('scan supports executable allowlist entries with sha256', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-hash-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-hash-'));
   fs.mkdirSync(path.join(root, 'tools'), { recursive: true });
   const exePath = path.join(root, 'tools', 'known-safe.exe');
   fs.writeFileSync(exePath, 'reviewed binary');
   const sha256 = crypto.createHash('sha256').update('reviewed binary').digest('hex');
-  fs.writeFileSync(path.join(root, '.security-guardrails.json'), JSON.stringify({
+  fs.mkdirSync(path.join(root, '.execfence', 'config'), { recursive: true });
+  fs.writeFileSync(path.join(root, '.execfence', 'config', 'execfence.json'), JSON.stringify({
     roots: ['tools'],
     allowExecutables: [{ path: 'tools/known-safe.exe', sha256 }],
   }, null, 2));
@@ -90,11 +92,12 @@ test('scan supports executable allowlist entries with sha256', () => {
 });
 
 test('scan suppresses reviewed findings through baseline', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-baseline-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-baseline-'));
   const filePath = path.join(root, 'tailwind.config.js');
   fs.writeFileSync(filePath, "global.i='2-30-4';\n");
   const sha256 = crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
-  fs.writeFileSync(path.join(root, '.security-guardrails.baseline.json'), JSON.stringify({
+  fs.mkdirSync(path.join(root, '.execfence', 'config'), { recursive: true });
+  fs.writeFileSync(path.join(root, '.execfence', 'config', 'baseline.json'), JSON.stringify({
     findings: [{
       findingId: 'void-dokkaebi-loader-marker',
       file: 'tailwind.config.js',
@@ -113,7 +116,7 @@ test('scan suppresses reviewed findings through baseline', () => {
 });
 
 test('scan honors fail-on severity overrides', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-fail-on-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-fail-on-'));
   fs.writeFileSync(path.join(root, 'pnpm-lock.yaml'), 'tarball: https://raw.githubusercontent.com/example/package.tgz\n');
 
   const defaultResult = scan({ cwd: root, roots: ['pnpm-lock.yaml'] });
@@ -124,7 +127,7 @@ test('scan honors fail-on severity overrides', () => {
 });
 
 test('scan audit mode reports findings without blocking', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-audit-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-audit-'));
   fs.writeFileSync(path.join(root, 'tailwind.config.js'), "global.i='2-30-4';\n");
 
   const result = scan({ cwd: root, roots: ['tailwind.config.js'], mode: 'audit' });
@@ -134,7 +137,7 @@ test('scan audit mode reports findings without blocking', () => {
 });
 
 test('scan audits suspicious package lifecycle scripts', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-package-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-package-'));
   fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({
     scripts: {
       postinstall: 'node -e "console.log(1)"',
@@ -148,7 +151,7 @@ test('scan audits suspicious package lifecycle scripts', () => {
 });
 
 test('scan audits insecure lockfile URLs', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-lock-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-lock-'));
   fs.writeFileSync(path.join(root, 'package-lock.json'), JSON.stringify({
     packages: {
       'node_modules/example': {
@@ -164,7 +167,7 @@ test('scan audits insecure lockfile URLs', () => {
 });
 
 test('scan audits additional package manager lockfiles as warnings', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-locks-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-locks-'));
   fs.writeFileSync(path.join(root, 'pnpm-lock.yaml'), 'tarball: https://raw.githubusercontent.com/example/package.tgz\n');
 
   const result = scan({ cwd: root, roots: ['pnpm-lock.yaml'] });
@@ -175,7 +178,7 @@ test('scan audits additional package manager lockfiles as warnings', () => {
 });
 
 test('scan audits risky GitHub workflow patterns', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-workflow-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-workflow-'));
   fs.mkdirSync(path.join(root, '.github', 'workflows'), { recursive: true });
   fs.writeFileSync(path.join(root, '.github', 'workflows', 'release.yml'), [
     'on: pull_request_target',
@@ -196,7 +199,7 @@ test('scan audits risky GitHub workflow patterns', () => {
 });
 
 test('scan audits committed archive artifacts', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-archive-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-archive-'));
   fs.writeFileSync(path.join(root, 'payload.asar'), 'archive');
 
   const result = scan({ cwd: root, roots: ['payload.asar'], failOn: ['medium'] });
@@ -206,8 +209,9 @@ test('scan audits committed archive artifacts', () => {
 });
 
 test('scan loads external signatures file', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-external-'));
-  fs.writeFileSync(path.join(root, '.security-guardrails.signatures.json'), JSON.stringify({
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-external-'));
+  fs.mkdirSync(path.join(root, '.execfence', 'config'), { recursive: true });
+  fs.writeFileSync(path.join(root, '.execfence', 'config', 'signatures.json'), JSON.stringify({
     exact: [{ id: 'team-ioc', value: 'team-bad.example' }],
     regex: [{ id: 'team-regex-ioc', pattern: 'wallet-[0-9]+' }],
   }, null, 2));
@@ -219,9 +223,24 @@ test('scan loads external signatures file', () => {
   assert.deepEqual(result.findings.map((item) => item.id), ['team-ioc', 'team-regex-ioc']);
 });
 
+test('scan ignores legacy root config files in v1 layout', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-legacy-config-'));
+  fs.mkdirSync(path.join(root, 'tools'), { recursive: true });
+  fs.writeFileSync(path.join(root, '.execfence.json'), JSON.stringify({
+    roots: ['tools'],
+    extraSignatures: ['legacy-only.example'],
+  }, null, 2));
+  fs.writeFileSync(path.join(root, 'tools', 'config.js'), 'const url = "legacy-only.example";\n');
+
+  const result = scan({ cwd: root, roots: ['tools'] });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.configPath, null);
+});
+
 test('golden malicious fixture is blocked and clean fixture passes', () => {
   const fixtureRoot = path.join(__dirname, 'fixtures');
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-golden-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-golden-'));
   const maliciousFixture = Buffer.from(
     fs.readFileSync(path.join(fixtureRoot, 'malicious-tailwind.config.fixture.b64'), 'utf8').trim(),
     'base64',

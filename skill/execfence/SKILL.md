@@ -1,9 +1,9 @@
 ---
-name: security-guardrails
+name: execfence
 description: Use when creating or hardening persistent projects that run on the web, build executable code, use Node/Go/Rust/Python supply chains, run CI/CD, or access the user's filesystem, credentials, browser, network, shell, desktop APIs, or local machine. Evaluates the stack and adds lightweight malware/supply-chain guardrails to block known injected payloads, suspicious executable configs, autostart tasks, and unexpected binaries before build/test/dev.
 ---
 
-# Security Guardrails
+# ExecFence
 
 Add stack-aware guardrails that fail fast before dev/build/test/CI when a persistent project could execute attacker-controlled code.
 
@@ -27,19 +27,19 @@ Skip only for throwaway snippets, one-off static files, pure documentation, or w
 Prefer these commands when available:
 
 ```sh
-npx --yes security-guardrails init --preset auto
-npx --yes security-guardrails scan --ci --format json
-npx --yes security-guardrails scan --mode audit --ci --format json
-npx --yes security-guardrails scan --fail-on critical,high --report security-guardrails-report
-npx --yes security-guardrails scan --ci --format sarif
-npx --yes security-guardrails diff-scan --staged
-npx --yes security-guardrails coverage
-npx --yes security-guardrails scan-history --max-commits 1000
-npx --yes security-guardrails doctor
-npx --yes security-guardrails explain suspicious-package-script
-npx --yes security-guardrails install-hooks
-npx --yes security-guardrails install-agent-rules --scope project
-npx --yes security-guardrails install-agent-rules --verify --scope project
+npx --yes execfence init --preset auto
+npx --yes execfence scan --ci --format json
+npx --yes execfence scan --mode audit --ci --format json
+npx --yes execfence scan --fail-on critical,high
+npx --yes execfence scan --ci --format sarif
+npx --yes execfence diff-scan --staged
+npx --yes execfence coverage
+npx --yes execfence scan-history --max-commits 1000
+npx --yes execfence doctor
+npx --yes execfence explain suspicious-package-script
+npx --yes execfence install-hooks
+npx --yes execfence install-agent-rules --scope project
+npx --yes execfence install-agent-rules --verify --scope project
 ```
 
 ## Minimum Detections
@@ -65,24 +65,26 @@ Block suspicious execution patterns:
 - executable artifacts such as `.exe`, `.dll`, `.bat`, `.cmd`, `.scr`, `.vbs`, `.wsf` inside source/build-input folders
 - suspicious npm lifecycle scripts and insecure or suspicious npm/pnpm/yarn/bun/Cargo/Go/Python lockfile URLs
 
-Prefer a project `.security-guardrails.json` for policy packs, reviewed exceptions, extra literal IoCs, extra regex detections, and audit/block mode instead of weakening the scanner code. When allowing a committed executable, use a `{ "path": "...", "sha256": "..." }` entry. Put team-specific IoCs in `.security-guardrails.signatures.json` and reviewed legacy findings in `.security-guardrails.baseline.json` with an owner, reason, expiry, and hash.
+Prefer project config under `.execfence/config/` for policy packs, reviewed exceptions, extra literal IoCs, extra regex detections, reports, and audit/block mode instead of weakening scanner code. When allowing a committed executable, use a `{ "path": "...", "sha256": "..." }` entry. Put team-specific IoCs in `.execfence/config/signatures.json` and reviewed legacy findings in `.execfence/config/baseline.json` with an owner, reason, expiry, and hash.
 
 ## User Configuration Surface
 
-Create project configuration in the repository root unless the project has a stronger local convention:
-- `.security-guardrails.json`: main config for `policyPack`, `mode`, `blockSeverities`, `warnSeverities`, scan `roots`, `ignoreDirs`, `skipFiles`, `allowExecutables`, `extraSignatures`, `extraRegexSignatures`, `signaturesFile`, `baselineFile`, `workflowHardening`, `archiveAudit`, and `auditAllPackageScripts`.
-- `.security-guardrails.signatures.json`: optional team-owned literal and regex indicators. Use this for new IoCs instead of editing scanner code.
-- `.security-guardrails.baseline.json`: optional reviewed exceptions for existing findings. Require `findingId`, `file`, `reason`, `owner`, `expiresAt`, and preferably `sha256`.
+Create project configuration through `execfence init`:
+- `.execfence/config/execfence.json`: main config for `policyPack`, `mode`, `blockSeverities`, `warnSeverities`, scan `roots`, `ignoreDirs`, `skipFiles`, `allowExecutables`, `extraSignatures`, `extraRegexSignatures`, `signaturesFile`, `baselineFile`, `reportsDir`, `reportsGitignore`, `analysis.webEnrichment`, `workflowHardening`, `archiveAudit`, and `auditAllPackageScripts`.
+- `.execfence/config/signatures.json`: optional team-owned literal and regex indicators. Use this for new IoCs instead of editing scanner code.
+- `.execfence/config/baseline.json`: optional reviewed exceptions for existing findings. Require `findingId`, `file`, `reason`, `owner`, `expiresAt`, and preferably `sha256`.
+- `.execfence/reports/`: automatic JSON reports. Keep it gitignored unless the user sets `reportsGitignore: false`.
+- `<home>/.agents/skills/execfence/defaults.json`: read-only global defaults installed with the skill. Do not ask the user to edit it; project config wins.
 
-Evidence is created only when requested. `scan --report <dir>` and `report --dir <dir>` write `<dir>/report.json` and `<dir>/report.md`; the default directory is `security-guardrails-report`. Do not delete or rewrite suspicious payloads automatically. Quarantine by preserving evidence in the report bundle and let the user decide cleanup/remediation.
+Evidence is created automatically for `scan`, `diff-scan`, `scan-history`, and `doctor`. Each report is a new `.execfence/reports/<project>_<datetime>.json` file with findings, snippets, hashes, git evidence, local analysis, and research queries. If `analysis.webEnrichment.enabled` is true or the incident needs context, use those research queries to search reputable external sources and summarize links in the user-facing response or an enriched report. Do not delete or rewrite suspicious payloads automatically.
 
 ## Preferred CLI
 
 When the package is available, prefer:
 
 ```sh
-npx --yes security-guardrails init
-npx --yes security-guardrails scan
+npx --yes execfence init
+npx --yes execfence scan
 ```
 
 ## Final Report
