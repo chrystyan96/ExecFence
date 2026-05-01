@@ -289,7 +289,7 @@ ExecFence combines exact IoC matching, project/team regex signatures, suspicious
 
 The important design choice is scope: rules are weighted toward files that execute during development, build, test, CI, package, publish, IDE, or agent workflows. ExecFence is not trying to lint every source file; it is trying to catch suspicious code where a normal command can activate it.
 
-For the full technical detection breakdown, see [Detection Model](./detection).
+For the full technical detection breakdown, including baselines and exceptions, see [Detection Model](./detection).
 
 ## Mapping To Real Attack Patterns
 
@@ -535,6 +535,8 @@ Important files:
 - `.execfence/manifest.json`: execution-surface inventory
 
 Reports are gitignored by default. A project can opt into versioning reports with `reportsGitignore: false`.
+
+For scanner internals, rule layers, and exception policy, continue to the [Detection Model](./detection).
 
 ## Recommended Adoption Path
 

@@ -1,6 +1,6 @@
 # ExecFence Detection Model
 
-This page is the technical companion to the main article. It explains what the scanner inspects and how the detection layers are intended to work.
+This page is the technical companion to the [ExecFence launch article](./article). It explains what the scanner inspects, how detection layers work, and how to handle reviewed exceptions without weakening the guardrail.
 
 ExecFence is built around execution surfaces. It prioritizes files and metadata that can cause code to run during:
 
@@ -158,15 +158,37 @@ A good exception includes:
 
 Use baselines for reviewed legacy findings. Do not baseline new `critical` or `high` findings only to make a build pass.
 
-## Reports
+Example `baseline.json` entry:
 
-Findings are written to timestamped JSON reports under:
-
-```text
-.execfence/reports/
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/chrystyan96/execfence/master/schema/execfence-baseline.schema.json",
+  "findings": [
+    {
+      "findingId": "executable-artifact-in-source-tree",
+      "file": "tools/reviewed-helper.exe",
+      "sha256": "9d377c49b1f5f3c61acd9dd3f4a8f0e8749f23d3c8d2d9080f24e7a0b2c2d4ef",
+      "reason": "Reviewed internal build helper required by legacy packaging workflow.",
+      "owner": "security-team",
+      "expiresAt": "2026-12-31"
+    }
+  ]
+}
 ```
 
-Reports include severity, rule id, file, line, snippet, SHA-256, git evidence, remediation, local analysis, and runtime/sandbox evidence when available.
+Operational rules for baselines:
+
+- Use a baseline only after reviewing the exact file and current hash.
+- Prefer `sha256` for any file-backed finding.
+- Require a human owner and a concrete reason.
+- Use short expiry dates for temporary exceptions.
+- Re-review the finding when the file hash changes.
+- Do not baseline fresh `critical` or `high` findings just to pass a build.
+- Do not use broad ignores when a narrow file/hash exception is possible.
+
+## Reports
+
+Findings are written to timestamped JSON reports under `.execfence/reports/`. For report contents and incident flow, see [Evidence Reports in the main article](./article#evidence-reports).
 
 ## Design Boundary
 
