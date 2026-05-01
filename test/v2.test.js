@@ -8,8 +8,8 @@ const test = require('node:test');
 const { execFileSync } = require('node:child_process');
 const { runWithFence } = require('../lib/runtime');
 const { diffManifest, generateManifest, writeManifest } = require('../lib/manifest');
-const { htmlReport, incidentBundle, incidentFromReport, latestReport, listReports, diffReports, pruneReports, readReport } = require('../lib/investigation');
-const { indicatorsFor, enrichFindings } = require('../lib/enrichment');
+const { htmlReport, incidentBundle, incidentFromReport, latestReport, listReports, diffReports, markdownReport, pruneReports, readReport, riskRegression } = require('../lib/investigation');
+const { indicatorsFor, enrichFindings, redactionPreview } = require('../lib/enrichment');
 const { trustAdd, trustAudit, packAudit } = require('../lib/supply-chain');
 const { agentReport } = require('../lib/agent-report');
 const { scan } = require('../lib/scanner');
@@ -18,6 +18,8 @@ const { depsDiff } = require('../lib/deps');
 const { wireProject } = require('../lib/wire');
 const { runCi } = require('../lib/ci');
 const { addBaselineFromReport } = require('../lib/baseline');
+const { adoptProject } = require('../lib/adopt');
+const { explainPolicy, testPolicy } = require('../lib/policy');
 
 function git(cwd, args) {
   return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
@@ -58,7 +60,24 @@ test('runtime gate executes clean commands and records trace evidence', () => {
   assert.equal(result.runtimeTrace.exitCode, 0);
   assert.ok(result.runtimeTrace.durationMs >= 0);
   assert.ok(result.runtimeTrace.after.changedAfter.some((file) => file.endsWith('created.txt')));
+  assert.ok(result.runtimeTrace.after.fileChanges.created.some((file) => file.file === 'created.txt'));
   assert.equal(fs.existsSync(output), true);
+});
+
+test('runtime trace detects renamed and deleted files from snapshots', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-run-snapshot-'));
+  fs.writeFileSync(path.join(root, 'old.txt'), 'same');
+  fs.writeFileSync(path.join(root, 'remove.txt'), 'delete');
+
+  const result = runWithFence([process.execPath, '-e', `
+const fs = require('fs');
+fs.renameSync('old.txt', 'new.txt');
+fs.unlinkSync('remove.txt');
+`], { cwd: root, stdio: 'pipe' });
+
+  assert.equal(result.ok, true);
+  assert.ok(result.runtimeTrace.after.fileChanges.renamed.some((entry) => entry.from === 'old.txt' && entry.to === 'new.txt'));
+  assert.ok(result.runtimeTrace.after.fileChanges.deleted.some((entry) => entry.file === 'remove.txt'));
 });
 
 test('runtime gate can record artifacts and deny new executable outputs', () => {
@@ -118,6 +137,7 @@ test('report investigation commands list, diff, html, and incident artifacts', (
   const listed = listReports(root);
   const diff = diffReports(root, suspicious.filePath, clean.filePath);
   const html = htmlReport(root, suspicious.filePath);
+  const markdown = markdownReport(root, suspicious.filePath);
   const incident = incidentFromReport(root, suspicious.filePath);
   const bundle = incidentBundle(root, suspicious.filePath);
   const latest = latestReport(root);
@@ -126,9 +146,11 @@ test('report investigation commands list, diff, html, and incident artifacts', (
   assert.equal(readReport(root, suspicious.filePath).report.metadata.schemaVersion, 2);
   assert.equal(diff.removedFindings.length, 1);
   assert.equal(fs.existsSync(html.htmlPath), true);
+  assert.equal(fs.existsSync(markdown.markdownPath), true);
   assert.equal(fs.existsSync(incident.incidentPath), true);
   assert.equal(fs.existsSync(path.join(bundle.bundleDir, 'report.json')), true);
   assert.ok(latest.id);
+  assert.equal(riskRegression(root, { left: clean.filePath, right: suspicious.filePath }).regression, true);
   const pruned = pruneReports(root, { maxReports: 1 });
   assert.equal(pruned.remaining, 1);
 });
@@ -148,6 +170,8 @@ test('enrichment builds redacted public-source work without network for rule-onl
   assert.deepEqual(indicators.packages, []);
   assert.equal(enrichment.status, 'complete');
   assert.equal(enrichment.results[0].sources[0].name, 'web-query');
+  const preview = redactionPreview([{ ...finding, file: 'C:/Users/Alice/project/tailwind.config.js' }], { redaction: { redactLocalPaths: true } });
+  assert.equal(preview.findings[0].redactedFile, '[local-path]');
 });
 
 test('trust store pins files by hash and audits changed trusted files', () => {
@@ -273,6 +297,37 @@ test('baseline helper adds report findings with owner reason expiry and hash', (
   assert.equal(result.added.length, 1);
   assert.equal(baseline.findings[0].owner, 'security');
   assert.match(baseline.findings[0].sha256, /^[a-f0-9]{64}$/);
+});
+
+test('adopt mode produces a low-noise correction plan and optional suggested baseline', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-adopt-'));
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'adopt-app', scripts: { test: 'node --test' } }, null, 2));
+  fs.writeFileSync(path.join(root, 'tailwind.config.js'), "global.i='2-30-4';\n");
+
+  const result = adoptProject(root, { writeSuggestedBaseline: true });
+
+  assert.equal(result.ok, true);
+  assert.ok(result.suggestedBaseline.length >= 1);
+  assert.ok(result.remediationPlan.some((item) => /execfence run/.test(item.action)));
+  assert.equal(fs.existsSync(result.suggestedBaselinePath), true);
+});
+
+test('policy explain and test support custom policy packs', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-policy-'));
+  const policies = path.join(root, '.execfence', 'config', 'policies');
+  fs.mkdirSync(policies, { recursive: true });
+  fs.writeFileSync(path.join(policies, 'team.json'), JSON.stringify({
+    roots: ['src'],
+    blockSeverities: ['critical', 'high', 'medium'],
+    warnSeverities: ['low'],
+  }, null, 2));
+
+  const explained = explainPolicy(root, { policyPack: 'team' });
+  const tested = testPolicy(root, { policyPack: 'team' });
+
+  assert.equal(explained.customPolicyPath.endsWith('team.json'), true);
+  assert.deepEqual(explained.blockSeverities, ['critical', 'high', 'medium']);
+  assert.equal(tested.ok, true);
 });
 
 test('agent report flags sensitive execution surface changes', () => {

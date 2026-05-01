@@ -103,7 +103,10 @@
         "enabled": { "type": "boolean", "default": true },
         "postRunScan": { "type": "boolean", "default": true },
         "captureGitStatus": { "type": "boolean", "default": true },
-        "redactEnv": { "type": "boolean", "default": true }
+        "redactEnv": { "type": "boolean", "default": true },
+        "snapshotFiles": { "type": "boolean", "default": true },
+        "recordArtifacts": { "type": "boolean", "default": false },
+        "denyOnNewExecutable": { "type": "boolean", "default": false }
       }
     },
     "analysis": {
@@ -185,6 +188,32 @@
         "detectLifecycleEntries": { "type": "boolean", "default": true },
         "detectBinEntries": { "type": "boolean", "default": true },
         "detectTyposquatting": { "type": "boolean", "default": true }
+      }
+    },
+    "adopt": {
+      "description": "Low-noise first-run adoption settings.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "writeSuggestedBaseline": { "type": "boolean", "default": false },
+        "blockDuringAdoption": { "type": "boolean", "default": false }
+      }
+    },
+    "policy": {
+      "description": "Organization/local policy controls.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "customPoliciesDir": { "type": "string", "default": ".execfence/config/policies" },
+        "requiredOwners": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "default": {}
+        },
+        "requireSignedPolicyFiles": { "type": "boolean", "default": false }
       }
     },
     "trustStore": {

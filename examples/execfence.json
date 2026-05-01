@@ -24,7 +24,10 @@
     "enabled": true,
     "postRunScan": true,
     "captureGitStatus": true,
-    "redactEnv": true
+    "redactEnv": true,
+    "snapshotFiles": true,
+    "recordArtifacts": false,
+    "denyOnNewExecutable": false
   },
   "analysis": {
     "webEnrichment": {
@@ -59,6 +62,15 @@
     "detectLifecycleEntries": true,
     "detectBinEntries": true,
     "detectTyposquatting": true
+  },
+  "adopt": {
+    "writeSuggestedBaseline": false,
+    "blockDuringAdoption": false
+  },
+  "policy": {
+    "customPoliciesDir": ".execfence/config/policies",
+    "requiredOwners": {},
+    "requireSignedPolicyFiles": false
   },
   "trustStore": {
     "files": ".execfence/trust/files.json",

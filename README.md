@@ -79,16 +79,19 @@ execfence diff-scan [--staged] [--mode block|audit]
 execfence scan-history [--max-commits <n>] [--format text|json|sarif] [--include-self]
 execfence coverage [--fix-suggestions] [--format text|json]
 execfence wire [--dry-run|--apply]
+execfence adopt [--write-baseline]
 execfence ci [--base-ref <ref>]
 execfence deps diff [--base-ref <ref>]
 execfence manifest
 execfence manifest diff
 execfence report [--dir <dir>] [paths...]
 execfence report --html <report.json>
-execfence reports list|latest|show <id>|open <id>|diff <a> <b>|compare [--since <report>]|prune
+execfence report --markdown <report.json>
+execfence reports list|latest|show <id>|open <id>|diff <a> <b>|compare [--since <report>]|regression [--since <report>]|prune
 execfence incident create|bundle|timeline --from-report <report.json>
 execfence baseline add --from-report <report.json> --owner <owner> --reason <reason> --expires-at <date>
-execfence enrich <report.json>
+execfence enrich [--preview] <report.json>
+execfence policy explain|test [--policy-pack <name>]
 execfence pack-audit
 execfence trust add <path|registry|action|scope> [--type file|registry|action|package-scope] --reason <reason> --owner <owner> --expires-at <date>
 execfence trust audit
@@ -157,7 +160,10 @@ Copyable examples are available in `examples/`. JSON schemas are published under
     "enabled": true,
     "postRunScan": true,
     "captureGitStatus": true,
-    "redactEnv": true
+    "redactEnv": true,
+    "snapshotFiles": true,
+    "recordArtifacts": false,
+    "denyOnNewExecutable": false
   },
   "analysis": {
     "webEnrichment": {
@@ -192,6 +198,15 @@ Copyable examples are available in `examples/`. JSON schemas are published under
     "detectLifecycleEntries": true,
     "detectBinEntries": true,
     "detectTyposquatting": true
+  },
+  "adopt": {
+    "writeSuggestedBaseline": false,
+    "blockDuringAdoption": false
+  },
+  "policy": {
+    "customPoliciesDir": ".execfence/config/policies",
+    "requiredOwners": {},
+    "requireSignedPolicyFiles": false
   },
   "trustStore": {
     "files": ".execfence/trust/files.json",
@@ -248,6 +263,8 @@ Configurable fields:
 | `ci` | Checks run by `execfence ci`: scan, manifest diff, dependency diff, pack audit, and trust audit. |
 | `wire` | Which project entrypoint files `execfence wire` may suggest or update. |
 | `deps` | Deep lockfile diff checks for registry drift, suspicious sources, lifecycle/bin entries, dependency confusion, and local typosquatting. |
+| `adopt` | Low-noise first-run adoption behavior, including suggested baselines without changing blocking policy. |
+| `policy` | Local organization controls, custom policy pack directory, required owners, and optional signing flags. |
 | `trustStore` | Paths for file/action/registry/package-scope/package-source trust stores. |
 | `htmlReport` | Local HTML report rendering settings. |
 | `reportRetention` | Local retention hints for generated evidence reports. |
@@ -315,7 +332,7 @@ npx --yes execfence run -- go test ./...
 npx --yes execfence run --record-artifacts --deny-on-new-executable -- npm test
 ```
 
-`run` performs a preflight scan, blocks before execution when configured severities are found, executes the command when clean, records a lightweight local runtime trace, and rescans changed files afterwards. It does not implement a sandbox or network block in V2.
+`run` performs a preflight scan, blocks before execution when configured severities are found, executes the command when clean, records a lightweight local runtime trace, snapshots file changes, and rescans changed files afterwards. It does not implement a sandbox or network block in V2.
 
 Generate and compare execution manifests:
 
@@ -330,6 +347,15 @@ Wire existing entrypoints to the runtime gate:
 npx --yes execfence wire --dry-run
 npx --yes execfence wire --apply
 ```
+
+For first adoption in existing repositories, use audit-first mode:
+
+```sh
+npx --yes execfence adopt
+npx --yes execfence adopt --write-baseline
+```
+
+`adopt` produces a correction plan, wiring suggestions, dependency/package checks, and an optional `.execfence/config/baseline.suggested.json` that still requires owner, reason, expiry, and review before use.
 
 ## CI Output
 
@@ -399,13 +425,26 @@ npx --yes execfence reports show <report-id>
 npx --yes execfence reports open <report-id>
 npx --yes execfence reports diff <old-report.json> <new-report.json>
 npx --yes execfence reports compare --since <old-report.json>
+npx --yes execfence reports regression --since <old-report.json>
 npx --yes execfence report --html .execfence/reports/<report>.json
+npx --yes execfence report --markdown .execfence/reports/<report>.json
 npx --yes execfence incident create --from-report .execfence/reports/<report>.json
 npx --yes execfence incident bundle --from-report .execfence/reports/<report>.json
 npx --yes execfence incident timeline --from-report .execfence/reports/<report>.json
 npx --yes execfence baseline add --from-report .execfence/reports/<report>.json --owner security --reason "reviewed false positive" --expires-at 2026-12-31
+npx --yes execfence enrich --preview .execfence/reports/<report>.json
 npx --yes execfence pr-comment --report .execfence/reports/<report>.json
 ```
+
+Explain and validate policies:
+
+```sh
+npx --yes execfence policy explain
+npx --yes execfence policy explain --policy-pack strict
+npx --yes execfence policy test
+```
+
+Custom policy packs live in `.execfence/config/policies/<name>.json` and are selected with `policyPack: "<name>"` or `--policy-pack <name>`.
 
 Audit supply-chain and trust metadata:
 

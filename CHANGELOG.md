@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.5.0 - 2026-05-01
+
+- Added low-noise adoption mode with `execfence adopt`, correction plans, wiring suggestions, and optional suggested baselines for existing projects.
+- Added Markdown report export, report regression scoring, redaction preview for enrichment, richer incident timelines, and report analysis fields with why-it-matters and exact next actions.
+- Added custom policy pack loading from `.execfence/config/policies/`, plus `policy explain` and `policy test` for local organization controls and baseline validation.
+- Hardened runtime tracing with file snapshots, created/modified/deleted/renamed file evidence, local trace-tool availability, and stronger new-executable artifact detection without adding a daemon or sandbox.
+
 ## v2.1.0 - 2026-05-01
 
 - Added `execfence ci` as the aggregate operational gate for scan, manifest diff, dependency diff, pack audit, trust audit, and automatic report generation.

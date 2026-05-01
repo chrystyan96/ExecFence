@@ -1,6 +1,6 @@
 {
   "name": "execfence",
-  "version": "2.1.0",
+  "version": "2.5.0",
   "description": "ExecFence blocks suspicious code execution paths before build, dev, test, and CI.",
   "license": "Apache-2.0",
   "author": "Chrystyan Byrnes",
