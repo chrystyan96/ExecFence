@@ -11,8 +11,10 @@
   "files": [
     "bin/",
     "lib/",
+    "schema/",
     "skill/",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {

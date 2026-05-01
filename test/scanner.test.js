@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const test = require('node:test');
 const { scan } = require('../lib/scanner');
 const { formatResult } = require('../lib/output');
@@ -69,6 +70,35 @@ test('scan honors config allowExecutables and extraSignatures', () => {
   assert.equal(result.findings[0].id, 'config-extra-signature-1');
 });
 
+test('scan supports executable allowlist entries with sha256', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-hash-'));
+  fs.mkdirSync(path.join(root, 'tools'), { recursive: true });
+  const exePath = path.join(root, 'tools', 'known-safe.exe');
+  fs.writeFileSync(exePath, 'reviewed binary');
+  const sha256 = crypto.createHash('sha256').update('reviewed binary').digest('hex');
+  fs.writeFileSync(path.join(root, '.security-guardrails.json'), JSON.stringify({
+    roots: ['tools'],
+    allowExecutables: [{ path: 'tools/known-safe.exe', sha256 }],
+  }, null, 2));
+
+  assert.equal(scan({ cwd: root }).ok, true);
+
+  fs.writeFileSync(exePath, 'tampered binary');
+  const tampered = scan({ cwd: root });
+  assert.equal(tampered.ok, false);
+  assert.equal(tampered.findings[0].id, 'allowed-executable-hash-mismatch');
+});
+
+test('scan audit mode reports findings without blocking', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-audit-'));
+  fs.writeFileSync(path.join(root, 'tailwind.config.js'), "global.i='2-30-4';\n");
+
+  const result = scan({ cwd: root, roots: ['tailwind.config.js'], mode: 'audit' });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.findings.length, 1);
+});
+
 test('scan audits suspicious package lifecycle scripts', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-package-'));
   fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({
@@ -97,6 +127,31 @@ test('scan audits insecure lockfile URLs', () => {
 
   assert.equal(result.ok, false);
   assert.equal(result.findings[0].id, 'insecure-lockfile-url');
+});
+
+test('scan audits additional package manager lockfiles as warnings', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-locks-'));
+  fs.writeFileSync(path.join(root, 'pnpm-lock.yaml'), 'tarball: https://raw.githubusercontent.com/example/package.tgz\n');
+
+  const result = scan({ cwd: root, roots: ['pnpm-lock.yaml'] });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.findings[0].id, 'lockfile-suspicious-host');
+  assert.equal(result.findings[0].severity, 'medium');
+});
+
+test('scan loads external signatures file', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-external-'));
+  fs.writeFileSync(path.join(root, '.security-guardrails.signatures.json'), JSON.stringify({
+    exact: [{ id: 'team-ioc', value: 'team-bad.example' }],
+    regex: [{ id: 'team-regex-ioc', pattern: 'wallet-[0-9]+' }],
+  }, null, 2));
+  fs.writeFileSync(path.join(root, 'app.js'), 'const a = "team-bad.example"; const b = "wallet-123";\n');
+
+  const result = scan({ cwd: root, roots: ['app.js'] });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.findings.map((item) => item.id), ['team-ioc', 'team-regex-ioc']);
 });
 
 test('golden malicious fixture is blocked and clean fixture passes', () => {

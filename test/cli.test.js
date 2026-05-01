@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const { installSkill, updateGlobalAgents } = require('../lib/cli');
+const { explainFinding } = require('../lib/explain');
 const {
   installAgentRules,
   installGlobalAgentRules,
@@ -81,4 +82,11 @@ test('installAgentRules supports both global and project scopes', () => {
   assert.ok(results.length >= 7);
   assert.equal(fs.existsSync(path.join(home, '.claude', 'CLAUDE.md')), true);
   assert.equal(fs.existsSync(path.join(project, 'CLAUDE.md')), true);
+});
+
+test('explainFinding describes known finding ids', () => {
+  const output = explainFinding('suspicious-package-script');
+
+  assert.match(output, /Severity: high/);
+  assert.match(output, /Lifecycle scripts/);
 });
