@@ -20,7 +20,7 @@ Skip only for throwaway snippets, one-off static files, pure documentation, or w
 
 1. Detect stack and execution surfaces.
 2. Create or reuse one small scanner script in the repo, preferably with no new dependency.
-3. Integrate it before normal build/test/dev commands.
+3. Integrate it before normal build/test/dev commands, preferably with `execfence run -- <command>`.
 4. Ignore dependency/build/cache folders to keep false positives low.
 5. Verify with direct scanner execution and one stack-specific command.
 
@@ -28,6 +28,10 @@ Prefer these commands when available:
 
 ```sh
 npx --yes execfence init --preset auto
+npx --yes execfence run -- npm test
+npx --yes execfence run -- npm run build
+npx --yes execfence manifest
+npx --yes execfence manifest diff
 npx --yes execfence scan --ci --format json
 npx --yes execfence scan --mode audit --ci --format json
 npx --yes execfence scan --fail-on critical,high
@@ -36,6 +40,10 @@ npx --yes execfence diff-scan --staged
 npx --yes execfence coverage
 npx --yes execfence scan-history --max-commits 1000
 npx --yes execfence doctor
+npx --yes execfence pack-audit
+npx --yes execfence agent-report
+npx --yes execfence reports list
+npx --yes execfence pr-comment --report .execfence/reports/<report>.json
 npx --yes execfence explain suspicious-package-script
 npx --yes execfence install-hooks
 npx --yes execfence install-agent-rules --scope project
@@ -70,13 +78,17 @@ Prefer project config under `.execfence/config/` for policy packs, reviewed exce
 ## User Configuration Surface
 
 Create project configuration through `execfence init`:
-- `.execfence/config/execfence.json`: main config for `policyPack`, `mode`, `blockSeverities`, `warnSeverities`, scan `roots`, `ignoreDirs`, `skipFiles`, `allowExecutables`, `extraSignatures`, `extraRegexSignatures`, `signaturesFile`, `baselineFile`, `reportsDir`, `reportsGitignore`, `analysis.webEnrichment`, `workflowHardening`, `archiveAudit`, and `auditAllPackageScripts`.
+- `.execfence/config/execfence.json`: main config for `policyPack`, `mode`, `blockSeverities`, `warnSeverities`, scan `roots`, `ignoreDirs`, `skipFiles`, `allowExecutables`, `extraSignatures`, `extraRegexSignatures`, `signaturesFile`, `baselineFile`, `reportsDir`, `reportsGitignore`, `runtimeTrace`, `analysis.webEnrichment`, `manifest`, `trustStore`, `reportRetention`, `redaction`, `workflowHardening`, `archiveAudit`, and `auditAllPackageScripts`.
 - `.execfence/config/signatures.json`: optional team-owned literal and regex indicators. Use this for new IoCs instead of editing scanner code.
 - `.execfence/config/baseline.json`: optional reviewed exceptions for existing findings. Require `findingId`, `file`, `reason`, `owner`, `expiresAt`, and preferably `sha256`.
 - `.execfence/reports/`: automatic JSON reports. Keep it gitignored unless the user sets `reportsGitignore: false`.
+- `.execfence/manifest.json`: generated execution-surface manifest for package scripts, Makefiles, workflows, tasks, hooks, language build files, and agent rules.
+- `.execfence/cache/enrichment/`: local cache for public-source enrichment of critical/high findings.
+- `.execfence/trust/*.json`: trust stores for reviewed files, actions, and registries.
+- `.execfence/quarantine/<report-id>/metadata.json`: quarantine metadata only; do not delete payloads automatically.
 - `<home>/.agents/skills/execfence/defaults.json`: read-only global defaults installed with the skill. Do not ask the user to edit it; project config wins.
 
-Evidence is created automatically for `scan`, `diff-scan`, `scan-history`, and `doctor`. Each report is a new `.execfence/reports/<project>_<datetime>.json` file with findings, snippets, hashes, git evidence, local analysis, and research queries. If `analysis.webEnrichment.enabled` is true or the incident needs context, use those research queries to search reputable external sources and summarize links in the user-facing response or an enriched report. Do not delete or rewrite suspicious payloads automatically.
+Evidence is created automatically for `run`, `scan`, `diff-scan`, `scan-history`, and `doctor`. Each report is a new `.execfence/reports/<project>_<datetime>.json` file with findings, snippets, hashes, git evidence, local analysis, runtime trace when available, and research queries. For `critical` and `high` findings, enrich with public safe sources (OSV, GitHub Advisory, npm metadata, CISA KEV, and reputable web sources when available) after redacting local paths and sensitive snippets. Network/enrichment failure never lowers severity or unblocks execution. Do not delete or rewrite suspicious payloads automatically.
 
 ## Preferred CLI
 
@@ -84,6 +96,7 @@ When the package is available, prefer:
 
 ```sh
 npx --yes execfence init
+npx --yes execfence run -- npm test
 npx --yes execfence scan
 ```
 

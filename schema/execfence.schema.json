@@ -95,6 +95,17 @@
       "type": "boolean",
       "default": true
     },
+    "runtimeTrace": {
+      "description": "Runtime gate trace settings for execfence run.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "postRunScan": { "type": "boolean", "default": true },
+        "captureGitStatus": { "type": "boolean", "default": true },
+        "redactEnv": { "type": "boolean", "default": true }
+      }
+    },
     "analysis": {
       "description": "Analysis and optional enrichment settings for report generation.",
       "type": "object",
@@ -104,14 +115,69 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "enabled": { "type": "boolean", "default": false },
+            "enabled": { "type": "boolean", "default": true },
+            "automaticForSeverities": {
+              "type": "array",
+              "items": { "enum": ["critical", "high", "medium", "low"] },
+              "uniqueItems": true,
+              "default": ["critical", "high"]
+            },
             "maxQueriesPerFinding": { "type": "integer", "minimum": 0, "default": 3 },
             "allowedDomains": {
               "type": "array",
               "items": { "type": "string" },
               "default": []
-            }
+            },
+            "timeoutMs": { "type": "integer", "minimum": 100, "default": 4000 },
+            "cacheTtlMs": { "type": "integer", "minimum": 0, "default": 86400000 }
           }
+        }
+      }
+    },
+    "manifest": {
+      "description": "Execution manifest and coverage policy settings.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "default": ".execfence/manifest.json" },
+        "requireRunWrapper": { "type": "boolean", "default": true },
+        "sensitiveEntrypoints": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["build", "test", "dev", "start", "serve", "watch", "prepare", "install", "postinstall"]
+        }
+      }
+    },
+    "trustStore": {
+      "description": "Paths for reviewed trust stores.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "files": { "type": "string", "default": ".execfence/trust/files.json" },
+        "actions": { "type": "string", "default": ".execfence/trust/actions.json" },
+        "registries": { "type": "string", "default": ".execfence/trust/registries.json" }
+      }
+    },
+    "reportRetention": {
+      "description": "Local retention hints for generated evidence reports.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "maxReports": { "type": "integer", "minimum": 1, "default": 100 },
+        "maxAgeDays": { "type": "integer", "minimum": 1, "default": 90 }
+      }
+    },
+    "redaction": {
+      "description": "Local redaction policy for evidence and external enrichment queries.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "redactLocalPaths": { "type": "boolean", "default": true },
+        "redactEnv": { "type": "boolean", "default": true },
+        "extraPatterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
         }
       }
     },

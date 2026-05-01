@@ -26,8 +26,11 @@ jobs:
       - run: npm install -g npm@latest
       - run: npm ci
       - run: npm test
+      - run: node bin/execfence.js run -- npm test
       - run: npm run scan
       - run: node bin/execfence.js scan --ci --format sarif . > execfence.sarif
+      - run: node bin/execfence.js manifest
+      - run: node bin/execfence.js pack-audit
       - run: npm version "${{ inputs.version }}" --no-git-tag-version
       - run: node scripts/update-changelog.cjs
       - run: |

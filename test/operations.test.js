@@ -46,7 +46,8 @@ test('report writes timestamped json evidence without deleting payload', () => {
   assert.equal(fs.existsSync(path.join(root, 'tailwind.config.js')), true);
   assert.match(path.basename(report.filePath), /^sample-app_\d{4}-\d{2}-\d{2}T/);
   assert.equal(report.files.length, 1);
-  assert.equal(evidence.metadata.command, 'test command');
+  assert.equal(evidence.command.display, 'test command');
+  assert.equal(evidence.metadata.schemaVersion, 2);
   assert.equal(evidence.summary.totalFindings, 1);
   assert.equal(evidence.findings[0].id, 'void-dokkaebi-loader-marker');
   assert.match(evidence.findings[0].analysis.local, /tailwind\.config\.js:1/);

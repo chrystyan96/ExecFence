@@ -14,12 +14,40 @@
   "baselineFile": ".execfence/config/baseline.json",
   "reportsDir": ".execfence/reports",
   "reportsGitignore": true,
+  "runtimeTrace": {
+    "enabled": true,
+    "postRunScan": true,
+    "captureGitStatus": true,
+    "redactEnv": true
+  },
   "analysis": {
     "webEnrichment": {
-      "enabled": false,
+      "enabled": true,
+      "automaticForSeverities": ["critical", "high"],
       "maxQueriesPerFinding": 3,
-      "allowedDomains": []
+      "allowedDomains": [],
+      "timeoutMs": 4000,
+      "cacheTtlMs": 86400000
     }
+  },
+  "manifest": {
+    "path": ".execfence/manifest.json",
+    "requireRunWrapper": true,
+    "sensitiveEntrypoints": ["build", "test", "dev", "start", "serve", "watch", "prepare", "install", "postinstall"]
+  },
+  "trustStore": {
+    "files": ".execfence/trust/files.json",
+    "actions": ".execfence/trust/actions.json",
+    "registries": ".execfence/trust/registries.json"
+  },
+  "reportRetention": {
+    "maxReports": 100,
+    "maxAgeDays": 90
+  },
+  "redaction": {
+    "redactLocalPaths": true,
+    "redactEnv": true,
+    "extraPatterns": []
   },
   "workflowHardening": true,
   "archiveAudit": true,

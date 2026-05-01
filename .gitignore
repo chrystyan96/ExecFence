@@ -3,4 +3,7 @@ coverage/
 *.log
 *.tgz
 .execfence/reports/
+.execfence/cache/
+.execfence/quarantine/
+.execfence/manifest.json
 .DS_Store

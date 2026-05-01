@@ -6,9 +6,10 @@ It is a small dependency-free CLI intended to fail fast before dev/build/test/CI
 
 ## Quick Start
 
-Run a scan without installing:
+Run the runtime gate or a scan without installing:
 
 ```sh
+npx --yes execfence run -- npm test
 npx --yes execfence scan
 npx --yes execfence scan --mode audit
 ```
@@ -71,12 +72,24 @@ The scanner ignores normal dependency/build/cache folders:
 ## Commands
 
 ```sh
+execfence run -- <command>
 execfence scan [paths...]
 execfence scan [--mode block|audit] [--fail-on critical,high] [--changed-only] [--full-ioc-scan] [--report <dir>] --ci [--format text|json|sarif] [paths...]
 execfence diff-scan [--staged] [--mode block|audit]
 execfence scan-history [--max-commits <n>] [--format text|json|sarif] [--include-self]
 execfence coverage [--format text|json]
+execfence manifest
+execfence manifest diff
 execfence report [--dir <dir>] [paths...]
+execfence report --html <report.json>
+execfence reports list|show <id>|diff <a> <b>
+execfence incident create --from-report <report.json>
+execfence enrich <report.json>
+execfence pack-audit
+execfence trust add <path> --reason <reason> --owner <owner> --expires-at <date>
+execfence trust audit
+execfence agent-report
+execfence pr-comment --report <report.json>
 execfence doctor
 execfence explain <finding-id>
 execfence init [--preset auto|node|go|tauri|python|rust] [--dry-run]
@@ -90,7 +103,7 @@ execfence print-agents-snippet
 
 ## Files, Logs, and Configuration
 
-`execfence` does not keep a background daemon. Normal command output goes to the terminal or CI log. Every blocking-capable scan command writes a new structured JSON evidence report under `.execfence/reports/`.
+`execfence` does not keep a background daemon. Normal command output goes to the terminal or CI log. Every blocking-capable command writes a new structured JSON evidence report under `.execfence/reports/`.
 
 Project-level files:
 
@@ -99,7 +112,11 @@ Project-level files:
 | `.execfence/config/execfence.json` | `init` | Main project policy: mode, severities, roots, policy pack, reports, allowlists, custom signatures, and feature toggles. |
 | `.execfence/config/signatures.json` | `init` / user/team | Optional project IoCs and regex detections. The path is configurable with `signaturesFile`. |
 | `.execfence/config/baseline.json` | `init` / user/team | Optional reviewed exceptions for existing findings. The path is configurable with `baselineFile`. |
-| `.execfence/reports/<project>_<datetime>.json` | `scan`, `diff-scan`, `scan-history`, `doctor`, or `report` | Machine-readable evidence bundle with findings, hashes, snippets, git blame, recent commits, command, config, local analysis, and research queries. |
+| `.execfence/manifest.json` | `manifest` | Execution-surface inventory for package scripts, Makefiles, workflows, VS Code tasks, hooks, language build files, and agent rules. |
+| `.execfence/reports/<project>_<datetime>.json` | `run`, `scan`, `diff-scan`, `scan-history`, `doctor`, or `report` | Machine-readable evidence bundle with findings, hashes, snippets, git blame, recent commits, command, config, local analysis, runtime trace when available, enrichment, and research queries. |
+| `.execfence/cache/enrichment/` | report/enrich commands | Local cache for public-source enrichment of critical/high findings. |
+| `.execfence/trust/*.json` | `trust add` | Hash-pinned trust stores for reviewed files, actions, and registries. |
+| `.execfence/quarantine/<report-id>/metadata.json` | report commands | Quarantine metadata only; ExecFence does not remove suspicious payloads automatically. |
 | `.gitignore` | `init` / scan commands | Keeps `.execfence/reports/` out of git unless `reportsGitignore` is `false`. |
 | `.git/hooks/pre-commit` | `install-hooks` | Local pre-commit scan hook. |
 | agent instruction files | `install-agent-rules` / `install-skill` | Portable instructions for Codex, Claude, Gemini, Cursor, Copilot, Continue, Windsurf, Aider, Roo, and Cline. |
@@ -107,7 +124,7 @@ Project-level files:
 
 The default report directory is `.execfence/reports` under the project root. ExecFence ignores `.execfence/` during scans so report bundles and config IoCs do not poison later scan output.
 
-Copyable examples are available in `examples/`. JSON schemas are published under `schema/` for the main config, external signatures, and reviewed baseline files.
+Copyable examples are available in `examples/`. JSON schemas are published under `schema/` for the main config, V2 reports, external signatures, and reviewed baseline files.
 
 ## Configuration
 
@@ -132,12 +149,40 @@ Copyable examples are available in `examples/`. JSON schemas are published under
   "baselineFile": ".execfence/config/baseline.json",
   "reportsDir": ".execfence/reports",
   "reportsGitignore": true,
+  "runtimeTrace": {
+    "enabled": true,
+    "postRunScan": true,
+    "captureGitStatus": true,
+    "redactEnv": true
+  },
   "analysis": {
     "webEnrichment": {
-      "enabled": false,
+      "enabled": true,
+      "automaticForSeverities": ["critical", "high"],
       "maxQueriesPerFinding": 3,
-      "allowedDomains": []
+      "allowedDomains": [],
+      "timeoutMs": 4000,
+      "cacheTtlMs": 86400000
     }
+  },
+  "manifest": {
+    "path": ".execfence/manifest.json",
+    "requireRunWrapper": true,
+    "sensitiveEntrypoints": ["build", "test", "dev", "start", "serve", "watch", "prepare", "install", "postinstall"]
+  },
+  "trustStore": {
+    "files": ".execfence/trust/files.json",
+    "actions": ".execfence/trust/actions.json",
+    "registries": ".execfence/trust/registries.json"
+  },
+  "reportRetention": {
+    "maxReports": 100,
+    "maxAgeDays": 90
+  },
+  "redaction": {
+    "redactLocalPaths": true,
+    "redactEnv": true,
+    "extraPatterns": []
   },
   "auditAllPackageScripts": false
 }
@@ -161,7 +206,12 @@ Configurable fields:
 | `baselineFile` | Path to a reviewed baseline/exceptions JSON file. |
 | `reportsDir` | Directory for automatic JSON evidence reports. |
 | `reportsGitignore` | Whether ExecFence keeps the reports directory in `.gitignore`. |
-| `analysis.webEnrichment` | Opt-in settings for agent/web enrichment; CLI reports still include local analysis and search queries offline. |
+| `runtimeTrace` | Enables preflight/post-run trace data for `execfence run`. |
+| `analysis.webEnrichment` | Public-source enrichment settings for critical/high findings. Queries are kept to IoCs, hashes, package names, domains, and rule IDs. |
+| `manifest` | Path and policy for execution entrypoint inventory and wrapper requirements. |
+| `trustStore` | Paths for hash-pinned file/action/registry trust stores. |
+| `reportRetention` | Local retention hints for generated evidence reports. |
+| `redaction` | Redaction settings for runtime evidence and enrichment queries. |
 | `workflowHardening` | Enables/disables GitHub Actions hardening checks. |
 | `archiveAudit` | Enables/disables source-tree archive checks for `.zip`, `.tar`, `.tgz`, and `.asar`. |
 | `auditAllPackageScripts` | Audits all package scripts instead of only install/prepare lifecycle scripts. |
@@ -208,10 +258,29 @@ Use `.execfence/config/baseline.json` to suppress reviewed existing findings wit
 
 Current integrations:
 
-- Node: adds `execfence:scan` and prepends existing `prestart`, `prebuild`, `pretest`, and `prewatch` hooks.
+- Node: adds `execfence:scan`, wraps existing `test` and `build` with `execfence run --`, and prepends existing `prestart`, `prebuild`, `pretest`, and `prewatch` hooks.
 - Go: adds a guarded `Makefile` target when requested and wires `build`, `test`, `test-race`, and `vet`.
 - Python: adds a pytest guard test when `pyproject.toml` is present.
 - GitHub Actions: adds `.github/workflows/execfence.yml` when workflows already exist.
+
+## Runtime Gate
+
+Use `execfence run -- <command>` for commands that execute project code:
+
+```sh
+npx --yes execfence run -- npm test
+npx --yes execfence run -- npm run build
+npx --yes execfence run -- go test ./...
+```
+
+`run` performs a preflight scan, blocks before execution when configured severities are found, executes the command when clean, records a lightweight local runtime trace, and rescans changed files afterwards. It does not implement a sandbox or network block in V2.
+
+Generate and compare execution manifests:
+
+```sh
+npx --yes execfence manifest
+npx --yes execfence manifest diff
+```
 
 ## CI Output
 
@@ -259,12 +328,33 @@ Check whether build/dev/test entrypoints are protected:
 npx --yes execfence coverage
 ```
 
-Generate or redirect an evidence bundle without deleting suspicious files. Scan commands also generate reports automatically:
+Generate or redirect an evidence bundle without deleting suspicious files. Runtime and scan commands also generate reports automatically:
 
 ```sh
+npx --yes execfence run -- npm test
 npx --yes execfence scan
 npx --yes execfence scan --report .execfence/reports
 npx --yes execfence report --dir .execfence/reports
+```
+
+Investigate reports locally:
+
+```sh
+npx --yes execfence reports list
+npx --yes execfence reports show <report-id>
+npx --yes execfence reports diff <old-report.json> <new-report.json>
+npx --yes execfence report --html .execfence/reports/<report>.json
+npx --yes execfence incident create --from-report .execfence/reports/<report>.json
+npx --yes execfence pr-comment --report .execfence/reports/<report>.json
+```
+
+Audit supply-chain and trust metadata:
+
+```sh
+npx --yes execfence pack-audit
+npx --yes execfence trust add tools/reviewed-helper.exe --reason "reviewed helper" --owner security --expires-at 2026-12-31
+npx --yes execfence trust audit
+npx --yes execfence agent-report
 ```
 
 Verify the scanner blocks a temporary known-bad fixture in the current environment:
