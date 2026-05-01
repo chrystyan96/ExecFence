@@ -10,6 +10,7 @@
   },
   "files": [
     "bin/",
+    "docs/",
     "examples/",
     "lib/",
     "schema/",

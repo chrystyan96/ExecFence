@@ -4,6 +4,20 @@ Execution-fence guardrails for persistent web, desktop, backend, and local-agent
 
 It is a small dependency-free CLI intended to fail fast before dev/build/test/CI when a repository contains known injected payloads, suspicious executable configuration, autostart tasks, or unexpected binaries in source/build-input folders.
 
+## Why This Exists
+
+ExecFence was created after looking at a recurring developer-workflow failure mode: malicious code is placed where normal project commands execute it. Recent public reporting includes fake interview repositories used to compromise developers, Visual Studio Code task abuse, package lifecycle hooks that deploy malware during install, and compromised npm releases that execute RAT payloads on developer machines.
+
+Relevant background:
+
+- Trend Micro: [Void Dokkaebi Uses Fake Job Interview Lure to Spread Malware via Code Repositories](https://www.trendmicro.com/en_us/research/26/d/void-dokkaebi-uses-fake-job-interview-lure-to-spread-malware-via-code-repositories.html)
+- Microsoft: [Contagious Interview: Malware delivered through fake developer job interviews](https://www.microsoft.com/en-us/security/blog/2026/03/11/contagious-interview-malware-delivered-through-fake-developer-job-interviews/)
+- Datadog: [Compromised axios npm package delivers cross-platform RAT](https://securitylabs.datadoghq.com/articles/axios-npm-supply-chain-compromise/)
+
+ExecFence does not replace endpoint security or dependency review. It adds a local fence at the point where suspicious repository code would become active: build, dev, test, install, pack, publish, CI, and agent execution.
+
+Full project documentation is in [docs/README.md](docs/README.md).
+
 ## Quick Start
 
 Run the runtime gate or a scan without installing:
@@ -38,6 +52,35 @@ Print the portable instruction snippet:
 ```sh
 npx --yes execfence print-agents-snippet
 ```
+
+## Using The Skill
+
+The skill is for coding agents. It tells the agent to add ExecFence when it is creating or modifying persistent projects that may run code, touch the local machine, access credentials, use package hooks, or expose agent/MCP tools.
+
+Install it:
+
+```sh
+npx --yes execfence install-skill
+```
+
+That command installs the Codex skill, writes global defaults to `<home>/.agents/skills/execfence/defaults.json`, and updates common global agent instruction files with the ExecFence rule.
+
+Add project-local agent rules:
+
+```sh
+npx --yes execfence install-agent-rules --scope project
+npx --yes execfence install-agent-rules --verify --scope project
+```
+
+What the skill should make the agent do:
+
+1. Detect the stack: Node, Go, Python, Rust, Tauri, Electron, GitHub Actions, VS Code tasks, MCP/tool configs, and agent instruction files.
+2. Run or recommend `npx --yes execfence init --preset auto`.
+3. Prefer `execfence run -- <command>` for test/build/dev commands.
+4. Use `execfence run --sandbox-mode audit -- <command>` for higher-risk local execution.
+5. Run `execfence ci`, `execfence coverage`, `execfence deps diff`, `execfence pack-audit`, and `execfence agent-report` when the project has matching surfaces.
+6. Never ignore `critical` or `high` findings unless a reviewed, unexpired baseline entry exists.
+7. Preserve `.execfence/reports/*.json` evidence when something blocks.
 
 ## What It Blocks
 
