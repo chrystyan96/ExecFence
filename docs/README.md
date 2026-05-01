@@ -342,6 +342,8 @@ ExecFence never deletes suspicious payloads automatically. Quarantine data is me
 
 The `execfence` skill is meant for coding agents. It tells the agent to add or use guardrails when working on persistent projects that may execute code or access the user's local machine.
 
+The skill has been submitted to the OpenAI Skills catalog as [openai/skills#385](https://github.com/openai/skills/pull/385). Until that PR is merged, install it from the npm package.
+
 Install from the package:
 
 ```sh
@@ -443,4 +445,4 @@ Use pinned action SHAs and least-privilege workflow permissions. Avoid `pull_req
 - Trend Micro: [Void Dokkaebi Uses Fake Job Interview Lure to Spread Malware via Code Repositories](https://www.trendmicro.com/en_us/research/26/d/void-dokkaebi-uses-fake-job-interview-lure-to-spread-malware-via-code-repositories.html)
 - Microsoft Security Blog: [Contagious Interview: Malware delivered through fake developer job interviews](https://www.microsoft.com/en-us/security/blog/2026/03/11/contagious-interview-malware-delivered-through-fake-developer-job-interviews/)
 - Datadog Security Labs: [Compromised axios npm package delivers cross-platform RAT](https://securitylabs.datadoghq.com/articles/axios-npm-supply-chain-compromise/)
-- OpenAI Skills catalog: [openai/skills](https://github.com/openai/skills)
+- OpenAI Skills catalog PR: [openai/skills#385](https://github.com/openai/skills/pull/385)
