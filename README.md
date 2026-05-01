@@ -18,7 +18,7 @@ Initialize common project hooks:
 npx --yes security-guardrails init
 ```
 
-Install the bundled Codex skill:
+Install the bundled Codex skill and automatically update global `AGENTS.md` with the guardrails rule:
 
 ```sh
 npx --yes security-guardrails install-skill
@@ -69,6 +69,11 @@ security-guardrails detect
 security-guardrails install-skill [--codex-home <path>]
 security-guardrails print-agents-snippet
 ```
+
+`install-skill` writes:
+
+- `<codex-home>/skills/security-guardrails/SKILL.md`
+- `<codex-home>/AGENTS.md`, inserting or replacing a marker-bounded `Security Guardrails` section
 
 ## Publishing
 
