@@ -129,6 +129,16 @@ npx --yes execfence wire --dry-run
 npx --yes execfence run -- npm test
 ```
 
+The higher-level automatic setup is:
+
+```sh
+npx --yes execfence guard enable
+npx --yes execfence guard enable --apply
+npx --yes execfence guard status
+```
+
+`guard enable` is a dry-run by default. It plans project config, script/workflow/task wrappers, CI wiring, local agent rules, and coverage status. `guard enable --apply` writes those changes. `guard disable` removes generated wrappers and marked agent rules while preserving reports, config, baselines, signatures, trust stores, and quarantine metadata.
+
 For first adoption in a noisy repository:
 
 ```sh
@@ -287,9 +297,22 @@ npx --yes execfence coverage
 npx --yes execfence coverage --fix-suggestions
 npx --yes execfence wire --dry-run
 npx --yes execfence wire --apply
+npx --yes execfence guard enable
+npx --yes execfence guard enable --apply
+npx --yes execfence guard disable
+npx --yes execfence guard status
 ```
 
 `coverage` finds execution entrypoints that are not protected by `execfence run` or equivalent guardrails. `wire` suggests or applies wrappers.
+
+`guard` is the automatic project mode. It runs `init`, checks coverage, applies wiring, installs project-local agent rules, and summarizes remaining gaps. Global guard mode is intentionally non-invasive:
+
+```sh
+npx --yes execfence guard global-status
+npx --yes execfence guard global-enable
+```
+
+It installs skill/defaults and global agent rules only. It does not alter PATH, aliases, shims, shell profiles, or globally intercept package-manager commands.
 
 ### Manifest
 
@@ -365,10 +388,11 @@ When active, the skill should make the agent:
 
 1. Detect the stack and execution surfaces.
 2. Prefer `execfence init --preset auto`.
-3. Prefer `execfence run -- <command>` for dev/build/test commands.
-4. Use `execfence run --sandbox-mode audit -- <command>` for higher-risk local execution.
-5. Avoid ignoring `critical` or `high` findings unless a reviewed, unexpired baseline exists.
-6. Use reports, manifest, coverage, dependency diff, pack audit, trust audit, and incident bundles when investigating a block.
+3. Prefer `execfence guard enable` and `execfence guard enable --apply` when the user wants automatic project setup.
+4. Prefer `execfence run -- <command>` for dev/build/test commands.
+5. Use `execfence run --sandbox-mode audit -- <command>` for higher-risk local execution.
+6. Avoid ignoring `critical` or `high` findings unless a reviewed, unexpired baseline exists.
+7. Use reports, manifest, coverage, dependency diff, pack audit, trust audit, and incident bundles when investigating a block.
 
 ## What To Do When ExecFence Blocks
 

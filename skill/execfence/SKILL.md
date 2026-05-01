@@ -19,15 +19,22 @@ Skip only for throwaway snippets, one-off static files, pure documentation, or w
 ## Workflow
 
 1. Detect stack and execution surfaces.
-2. Create or reuse one small scanner script in the repo, preferably with no new dependency.
-3. Integrate it before normal build/test/dev commands, preferably with `execfence run -- <command>`.
-4. Ignore dependency/build/cache folders to keep false positives low.
-5. Verify with direct scanner execution and one stack-specific command.
+2. Prefer `npx --yes execfence guard enable` to preview automatic project setup.
+3. Use `npx --yes execfence guard enable --apply` when the user wants the project wired automatically.
+4. Integrate normal build/test/dev commands with `execfence run -- <command>`.
+5. Ignore dependency/build/cache folders to keep false positives low.
+6. Verify with direct scanner execution and one stack-specific command.
 
 Prefer these commands when available:
 
 ```sh
 npx --yes execfence init --preset auto
+npx --yes execfence guard enable
+npx --yes execfence guard enable --apply
+npx --yes execfence guard status
+npx --yes execfence guard disable
+npx --yes execfence guard global-status
+npx --yes execfence guard global-enable
 npx --yes execfence run -- npm test
 npx --yes execfence run -- npm run build
 npx --yes execfence run --sandbox-mode audit -- npm test
@@ -68,6 +75,8 @@ npx --yes execfence install-hooks
 npx --yes execfence install-agent-rules --scope project
 npx --yes execfence install-agent-rules --verify --scope project
 ```
+
+`guard enable` is dry-run by default. It should be the first recommendation when the user wants automatic protection for `test`, `build`, `dev`, `pack`, `publish`, CI, and agent-driven execution. `guard global-enable` is non-invasive; it installs skill/defaults and global agent rules only, and must not alter PATH, aliases, shims, shell profiles, or intercept package-manager commands globally.
 
 ## Minimum Detections
 
