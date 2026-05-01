@@ -126,6 +126,9 @@ The npm package provides the actual `execfence` command.
 You can run it without a global install:
 
 ```sh
+npx --yes execfence guard enable
+npx --yes execfence guard enable --apply
+npx --yes execfence guard status
 npx --yes execfence scan
 npx --yes execfence run -- npm test
 npx --yes execfence ci
@@ -149,6 +152,7 @@ The CLI runs in:
 
 The CLI is the part that performs enforcement and evidence collection:
 
+- plans and applies automatic project guardrails
 - scans files
 - checks package scripts and lockfiles
 - blocks risky findings
@@ -160,6 +164,15 @@ The CLI is the part that performs enforcement and evidence collection:
 - exits nonzero when policy says a command must fail
 
 If you only want terminal/CI protection, the npm CLI is enough.
+
+ExecFence does not globally intercept raw commands such as `npm test`, `go test`, or `cargo test` by default. To make project commands route through ExecFence automatically, use project guard mode:
+
+```sh
+npx --yes execfence guard enable
+npx --yes execfence guard enable --apply
+```
+
+The first command is a dry-run. The second writes reversible project-local changes. Use `npx --yes execfence guard disable` to remove generated wrappers and marked agent rules while preserving evidence and configuration.
 
 ### The Codex/Agent Skill
 
@@ -203,7 +216,7 @@ For best results, use both:
 
 ```sh
 npx --yes execfence install-skill
-npx --yes execfence init --preset auto
+npx --yes execfence guard enable --apply
 npx --yes execfence run -- npm test
 ```
 
@@ -392,6 +405,10 @@ These commands answer:
 ```sh
 npx --yes execfence wire --dry-run
 npx --yes execfence wire --apply
+npx --yes execfence guard enable
+npx --yes execfence guard enable --apply
+npx --yes execfence guard disable
+npx --yes execfence guard status
 ```
 
 This helps move project commands from:
@@ -405,6 +422,15 @@ to:
 ```sh
 execfence run -- npm test
 ```
+
+`guard enable` is the recommended high-level entrypoint for project adoption. It runs `init`, checks coverage, applies wrappers, installs project-local agent rules, and reports remaining gaps. Global guard mode is experimental and non-invasive:
+
+```sh
+npx --yes execfence guard global-status
+npx --yes execfence guard global-enable
+```
+
+It installs skill/defaults and global agent rules only. It does not alter PATH, aliases, shell profiles, or globally intercept package-manager commands.
 
 ### Supply Chain And Package Audit
 
