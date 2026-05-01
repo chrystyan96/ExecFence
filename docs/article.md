@@ -77,6 +77,26 @@ npx --yes execfence run --sandbox -- npm test
 
 If the platform or helper cannot enforce filesystem, process, or network policy, ExecFence blocks before execution. It does not silently downgrade `--sandbox` to audit mode.
 
+## If ExecFence Blocks
+
+This is the most important operational path. A block usually happens at the moment a developer or agent is about to run project code, so the right response should be clear and boring:
+
+```sh
+npx --yes execfence reports latest
+npx --yes execfence reports open <report>
+npx --yes execfence incident bundle --from-report .execfence/reports/<report>.json
+```
+
+When ExecFence blocks:
+
+1. Do not rerun the blocked command outside ExecFence.
+2. Preserve the JSON report and suspicious files.
+3. Review the finding id, severity, file, line, snippet, SHA-256, git blame, and recent commits.
+4. Check package scripts, lockfiles, workflows, and agent/MCP configs related to the finding.
+5. If already-executed code may have touched secrets, rotate credentials.
+
+The report is the evidence handoff. It is designed to answer: what blocked, where it was, why it was suspicious, what changed recently, and what to inspect next.
+
 ## Why ExecFence Was Created
 
 ExecFence started from a practical incident-response question. A project build/test path produced a temporary Go test binary that local security tooling flagged as `PasswordStealer.Spyware.Stealer.DDS`. The immediate question was whether that specific binary was malicious. The better engineering question was:
@@ -365,6 +385,19 @@ ExecFence does not claim campaign attribution. It turns the lessons from those i
 
 ## Main Functional Areas
 
+### Essential Commands
+
+These are the commands most projects should start with:
+
+```sh
+npx --yes execfence init --preset auto
+npx --yes execfence scan
+npx --yes execfence run -- npm test
+npx --yes execfence ci
+```
+
+Use them to initialize policy, scan before execution, wrap local test/build commands, and run the aggregate CI guard.
+
 ### Static Scan
 
 ```sh
@@ -480,6 +513,52 @@ This flags sensitive changes in:
 - agent instruction files
 - MCP configs
 - broad shell/filesystem/network/browser/credential tool definitions
+
+Example output:
+
+```json
+{
+  "ok": false,
+  "sensitiveChanges": ["mcp.json"],
+  "mcpFindings": [
+    {
+      "id": "agent-mcp-shell-access",
+      "severity": "high",
+      "file": "mcp.json",
+      "line": 4,
+      "detail": "MCP/tool config exposes broad shell or process execution capability."
+    },
+    {
+      "id": "agent-disable-execfence-instruction",
+      "severity": "high",
+      "file": "mcp.json",
+      "line": 5,
+      "detail": "Agent or tool instruction appears to disable, skip, ignore, or bypass ExecFence/security guardrails."
+    }
+  ]
+}
+```
+
+This is one of the more differentiated parts of ExecFence: it treats agent tooling as part of the execution surface, not as a trusted control plane by default.
+
+### Advanced Commands
+
+These commands are useful once the basic workflow is in place:
+
+```sh
+npx --yes execfence scan --changed-only --ci --format json
+npx --yes execfence scan --ci --format sarif
+npx --yes execfence manifest diff
+npx --yes execfence coverage --fix-suggestions
+npx --yes execfence wire --dry-run
+npx --yes execfence deps diff
+npx --yes execfence pack-audit
+npx --yes execfence trust audit
+npx --yes execfence reports diff <old-report.json> <new-report.json>
+npx --yes execfence pr-comment --report .execfence/reports/<report>.json
+```
+
+Use them for CI output, PR review, lockfile investigation, package publishing checks, report comparison, and team adoption.
 
 ## Evidence Reports
 
@@ -597,26 +676,6 @@ When active, the skill should make the agent:
 4. Use `execfence run --sandbox-mode audit -- <command>` for higher-risk local execution.
 5. Avoid ignoring `critical` or `high` findings unless a reviewed, unexpired baseline exists.
 6. Use reports, manifest, coverage, dependency diff, pack audit, trust audit, and incident bundles when investigating a block.
-
-## What To Do When ExecFence Blocks
-
-1. Do not rerun the blocked command outside ExecFence.
-2. Preserve the report and suspicious files.
-3. Open the newest report:
-
-   ```sh
-   npx --yes execfence reports latest
-   npx --yes execfence reports open <report>
-   ```
-
-4. Build an incident bundle:
-
-   ```sh
-   npx --yes execfence incident bundle --from-report .execfence/reports/<report>.json
-   ```
-
-5. Review git blame, recent commits, snippets, hashes, lockfiles, workflows, package scripts, and agent/tool configs.
-6. Rotate credentials if already-executed code may have touched secrets.
 
 ## Design Principles
 
