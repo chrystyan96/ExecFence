@@ -10,6 +10,13 @@ npx --yes execfence run -- npm test
 npx --yes execfence run --sandbox-mode audit -- npm run build
 ```
 
+Before going deeper, it is important to separate two installation surfaces:
+
+- **ExecFence CLI from npm**: the executable tool that runs in a terminal, shell, package script, or CI runner. This is what scans files, blocks commands, writes JSON reports, audits lockfiles, and returns exit codes.
+- **ExecFence skill for Codex/agents**: an instruction package that runs inside the coding agent's context. It does not scan files by itself. It teaches the agent when to call the CLI and how to wire guardrails into a project.
+
+In short: npm runs the guardrail; the skill teaches the agent to use the guardrail.
+
 ExecFence exists because malicious code does not need to look like an obvious executable. It can hide in package hooks, build configs, IDE tasks, lockfiles, CI workflows, or agent tool manifests. The dangerous moment is often mundane: a developer runs test/build/dev, opens a folder in an IDE, installs dependencies, or lets an agent run the project.
 
 ## Quick Start
@@ -85,6 +92,116 @@ Microsoft's research on Contagious Interview describes a related trust problem: 
 Datadog's analysis of the 2026 axios npm compromise shows the supply-chain form of the same execution problem: malicious releases introduced a dependency with a `postinstall` script that downloaded and ran a cross-platform RAT during install, then removed traces from disk: [Compromised axios npm package delivers cross-platform RAT](https://securitylabs.datadoghq.com/articles/axios-npm-supply-chain-compromise/).
 
 The shared lesson is operational: ordinary developer commands can become the execution trigger.
+
+## CLI Install vs Codex Skill Install
+
+ExecFence has two installation paths because there are two different users of the tool: humans/CI running commands, and coding agents deciding which commands to run.
+
+### The npm CLI
+
+The npm package provides the actual `execfence` command.
+
+You can run it without a global install:
+
+```sh
+npx --yes execfence scan
+npx --yes execfence run -- npm test
+npx --yes execfence ci
+```
+
+Or install it globally if you prefer:
+
+```sh
+npm install -g execfence
+execfence scan
+```
+
+The CLI runs in:
+
+- your terminal
+- package scripts
+- GitHub Actions or other CI runners
+- local shell sessions used by agents
+- pre-commit hooks
+- build/test/publish workflows
+
+The CLI is the part that performs enforcement and evidence collection:
+
+- scans files
+- checks package scripts and lockfiles
+- blocks risky findings
+- wraps commands with `execfence run -- <command>`
+- records runtime traces
+- writes `.execfence/reports/*.json`
+- audits dependency diffs and package contents
+- checks sandbox capability and audit/enforce mode
+- exits nonzero when policy says a command must fail
+
+If you only want terminal/CI protection, the npm CLI is enough.
+
+### The Codex/Agent Skill
+
+The skill is different. It is not the scanner. It is an instruction layer for Codex and compatible agent workflows.
+
+Install it with:
+
+```sh
+npx --yes execfence install-skill
+```
+
+That command installs:
+
+- the Codex skill under the local Codex skills directory
+- default skill config at `<home>/.agents/skills/execfence/defaults.json`
+- global agent instructions that tell agents to prefer ExecFence before risky project execution
+
+After that, Codex can use the skill when it is working on a persistent project. The skill should make the agent:
+
+- detect execution surfaces before running project code
+- call `npx --yes execfence init --preset auto` when guardrails are missing
+- prefer `execfence run -- <command>` instead of raw `npm test`, `go test`, or similar commands
+- use `execfence run --sandbox-mode audit -- <command>` for higher-risk local execution
+- run `execfence ci`, `coverage`, `deps diff`, `pack-audit`, and `agent-report` when appropriate
+- avoid ignoring `critical` or `high` findings unless a reviewed baseline exists
+- preserve `.execfence/reports/*.json` after a block
+
+The skill runs in the agent's reasoning context. The CLI runs in the operating system process. That distinction matters:
+
+| Question | npm CLI | Codex/agent skill |
+| --- | --- | --- |
+| Does it scan files? | Yes | No, it tells the agent to run the CLI |
+| Does it block commands? | Yes, by exit code | No, it instructs the agent not to bypass blocks |
+| Does it write reports? | Yes, under `.execfence/reports/` | No, but it tells the agent to preserve/read reports |
+| Does it run in CI? | Yes | No |
+| Does it change agent behavior? | Only if the agent calls it | Yes |
+| Is it useful without Codex? | Yes | No, except as portable guidance |
+| Is it useful without npm CLI? | No | Limited; it needs a guardrail command to invoke |
+
+For best results, use both:
+
+```sh
+npx --yes execfence install-skill
+npx --yes execfence init --preset auto
+npx --yes execfence run -- npm test
+```
+
+This gives the human and CI a real command-line guardrail, and gives Codex/agents the instruction to keep using it.
+
+### Project-Local Agent Rules
+
+There is a third, portable option:
+
+```sh
+npx --yes execfence install-agent-rules --scope project
+```
+
+This writes project-local rules for tools such as Codex, Claude, Gemini, Cursor, Copilot, Continue, Windsurf, Aider, Roo, and Cline.
+
+Use this when the repository itself should carry the instruction:
+
+> before running build/dev/test or changing execution surfaces, use ExecFence.
+
+This is useful for teams because the rule travels with the repository instead of living only in one developer's global Codex setup.
 
 ## How ExecFence Fits Into A Security Stack
 

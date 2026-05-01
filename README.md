@@ -20,7 +20,14 @@ Full project documentation is published at [https://chrystyan96.github.io/ExecFe
 
 ## Quick Start
 
-Run the runtime gate or a scan without installing:
+There are two different things named ExecFence:
+
+- **ExecFence CLI from npm**: runs in your terminal or CI through `npx --yes execfence ...`. This is the scanner/runtime gate that actually inspects files, blocks commands, writes reports, audits lockfiles, and runs `ci`, `pack-audit`, `sandbox`, etc.
+- **ExecFence skill for Codex/agents**: runs inside the coding agent as instructions. It does not scan by itself. It tells the agent when and how to call the CLI, when to wire guardrails, and when not to ignore findings.
+
+Most users should use the CLI directly. Agent users should install the skill as well so Codex knows to use the CLI before running risky project commands.
+
+Run the CLI runtime gate or a scan without installing the package globally:
 
 ```sh
 npx --yes execfence run -- npm test
@@ -35,7 +42,7 @@ Initialize common project hooks:
 npx --yes execfence init --preset auto
 ```
 
-Install the bundled Codex skill and automatically update global agent instructions:
+Install the Codex/agent skill so Codex and other configured agents know when to use ExecFence:
 
 ```sh
 npx --yes execfence install-skill
@@ -53,9 +60,17 @@ Print the portable instruction snippet:
 npx --yes execfence print-agents-snippet
 ```
 
-## Using The Skill
+## CLI vs Skill
 
-The skill is for coding agents. It tells the agent to add ExecFence when it is creating or modifying persistent projects that may run code, touch the local machine, access credentials, use package hooks, or expose agent/MCP tools.
+The npm package and the skill solve different parts of the problem.
+
+| Install/use path | Runs where | What it does | Use when |
+| --- | --- | --- | --- |
+| `npx --yes execfence scan` / `run` / `ci` | Terminal, shell, CI, package scripts | Actually scans files, gates commands, writes reports, audits dependencies, and returns exit codes | You want protection now, independent of any agent |
+| `npx --yes execfence install-skill` | Terminal once, then Codex/agents read the installed instructions | Installs agent instructions and defaults so Codex knows to call ExecFence before risky actions | You use Codex or coding agents on persistent projects |
+| `npx --yes execfence install-agent-rules --scope project` | Terminal once, then project agent files are read by agents | Adds portable project-local rules for Codex, Claude, Gemini, Cursor, Copilot, Continue, Windsurf, Aider, Roo, and Cline | You want the repository itself to instruct agents to use ExecFence |
+
+The skill is for coding agents. It tells the agent to add ExecFence when it is creating or modifying persistent projects that may run code, touch the local machine, access credentials, use package hooks, or expose agent/MCP tools. The skill does not replace the CLI; it should make the agent run the CLI.
 
 Install it:
 
