@@ -10,6 +10,7 @@ Run a scan without installing:
 
 ```sh
 npx --yes security-guardrails scan
+npx --yes security-guardrails scan --mode audit
 ```
 
 Initialize common project hooks:
@@ -59,7 +60,7 @@ Suspicious execution patterns:
 - dynamic `Function`/`constructor` loaders combined with `eval`, `fromCharCode`, or `child_process`
 - very long obfuscated JavaScript lines with loader markers
 - executable artifacts such as `.exe`, `.dll`, `.bat`, `.cmd`, `.scr`, `.vbs`, `.wsf` inside source/build-input folders
-- suspicious npm lifecycle scripts and insecure or suspicious npm lockfile URLs
+- suspicious npm lifecycle scripts and insecure or suspicious package-manager lockfile URLs
 
 ## Default Ignored Paths
 
@@ -71,9 +72,10 @@ The scanner ignores normal dependency/build/cache folders:
 
 ```sh
 security-guardrails scan [paths...]
-security-guardrails scan --ci [--format text|json|sarif] [paths...]
-security-guardrails diff-scan [--staged]
+security-guardrails scan [--mode block|audit] --ci [--format text|json|sarif] [paths...]
+security-guardrails diff-scan [--staged] [--mode block|audit]
 security-guardrails scan-history [--max-commits <n>] [--format text|json|sarif] [--include-self]
+security-guardrails explain <finding-id>
 security-guardrails init [--preset auto|node|go|tauri|python|rust]
 security-guardrails detect
 security-guardrails install-hooks
@@ -89,18 +91,36 @@ security-guardrails print-agents-snippet
 
 ```json
 {
+  "$schema": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails.schema.json",
+  "mode": "block",
+  "blockSeverities": ["critical", "high"],
   "roots": ["backend-go", "backend", "frontend", "desktop", "packages", "scripts", ".github", ".vscode"],
   "ignoreDirs": [],
   "skipFiles": [],
-  "allowExecutables": [],
+  "allowExecutables": [
+    { "path": "tools/reviewed-helper.exe", "sha256": "0000000000000000000000000000000000000000000000000000000000000000" }
+  ],
   "extraSignatures": [],
   "extraRegexSignatures": [],
+  "signaturesFile": ".security-guardrails.signatures.json",
   "auditAllPackageScripts": false
 }
 ```
 
 Use `allowExecutables` sparingly for reviewed binaries that are intentionally committed.
+Prefer `{ "path": "...", "sha256": "..." }` entries so a reviewed binary cannot be silently replaced.
 Use `extraSignatures` for literal project-specific IoCs and `extraRegexSignatures` for reviewed regex detections.
+
+For larger teams, keep project-specific detections in `.security-guardrails.signatures.json`:
+
+```json
+{
+  "exact": [{ "id": "team-ioc", "value": "bad-domain.example" }],
+  "regex": [{ "id": "team-wallet-marker", "pattern": "wallet-[0-9]+" }]
+}
+```
+
+`mode: "audit"` reports findings without failing the command. `mode: "block"` fails only for configured `blockSeverities`, which default to `critical` and `high`.
 
 ## Presets
 
@@ -121,6 +141,8 @@ Use JSON or SARIF in CI:
 npx --yes security-guardrails scan --ci --format json
 npx --yes security-guardrails scan --ci --format sarif > security-guardrails.sarif
 ```
+
+The repository includes `.github/workflows/ci.yml`, which runs tests, scan, SARIF generation, and package dry-run on Ubuntu, Windows, and macOS.
 
 ## Git Workflows
 
@@ -143,6 +165,12 @@ Install a pre-commit hook:
 
 ```sh
 npx --yes security-guardrails install-hooks
+```
+
+Explain a finding:
+
+```sh
+npx --yes security-guardrails explain suspicious-package-script
 ```
 
 `install-skill` writes:
@@ -179,11 +207,13 @@ npm pack --dry-run
 git init
 git add .
 git commit -m "Create security guardrails CLI"
-git branch -M main
-git remote add origin https://github.com/TwinSparkGames/security-guardrails.git
-git push -u origin main
-npm publish --access public
+git branch -M master
+git remote add origin https://github.com/chrystyan96/security-guardrails.git
+git push -u origin master
+npm publish --access public --provenance
 ```
+
+The repository includes `.github/workflows/release.yml` for manual npm releases. It bumps the requested version, updates `CHANGELOG.md`, creates the commit/tag, and publishes with provenance. Configure npm Trusted Publishing for `chrystyan96/security-guardrails` with workflow filename `release.yml`; npm will use OIDC and publish provenance for that workflow.
 
 The packaged helper runs the safe release checks:
 

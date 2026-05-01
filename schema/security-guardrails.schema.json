@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails.schema.json",
+  "title": "security-guardrails configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "mode": { "enum": ["block", "audit"] },
+    "blockSeverities": {
+      "type": "array",
+      "items": { "enum": ["critical", "high", "medium", "low"] },
+      "uniqueItems": true
+    },
+    "roots": { "type": "array", "items": { "type": "string" } },
+    "ignoreDirs": { "type": "array", "items": { "type": "string" } },
+    "skipFiles": { "type": "array", "items": { "type": "string" } },
+    "allowExecutables": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "type": "string" },
+          {
+            "type": "object",
+            "required": ["path", "sha256"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string" },
+              "sha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
+              "reason": { "type": "string" }
+            }
+          }
+        ]
+      }
+    },
+    "extraSignatures": { "type": "array", "items": { "type": "string" } },
+    "extraRegexSignatures": { "type": "array", "items": { "type": "string" } },
+    "signaturesFile": { "type": "string" },
+    "auditAllPackageScripts": { "type": "boolean" }
+  }
+}

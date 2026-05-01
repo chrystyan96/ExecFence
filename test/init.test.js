@@ -24,11 +24,15 @@ test('initProject adds npm guard script and prepends existing hooks', () => {
 
   const result = initProject({ cwd: root });
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  const config = JSON.parse(fs.readFileSync(path.join(root, '.security-guardrails.json'), 'utf8'));
 
   assert.ok(result.changes.length >= 2);
   assert.equal(pkg.scripts['security:guardrails'], 'security-guardrails scan');
   assert.equal(pkg.scripts.prebuild, 'npm run security:guardrails && npm test');
   assert.equal(fs.existsSync(path.join(root, '.security-guardrails.json')), true);
+  assert.equal(config.mode, 'block');
+  assert.equal(config.$schema, 'https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails.schema.json');
+  assert.equal(config.signaturesFile, '.security-guardrails.signatures.json');
 });
 
 test('initProject go preset creates a guarded Makefile', () => {
