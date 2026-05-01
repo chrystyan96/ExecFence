@@ -1,617 +1,220 @@
 # ExecFence
 
-Execution-fence guardrails for persistent web, desktop, backend, and local-agent projects.
+ExecFence is a local execution guardrail for projects that run code during development, build, test, CI, packaging, publishing, or agent workflows.
 
-It is a small dependency-free CLI intended to fail fast before dev/build/test/CI when a repository contains known injected payloads, suspicious executable configuration, autostart tasks, or unexpected binaries in source/build-input folders.
+It was created for a specific failure mode: a repository looks like normal source code, but contains injected code, suspicious scripts, task files, package hooks, binaries, archives, or agent/tool configuration that can execute when a developer or coding agent runs an ordinary command.
 
-## Why This Exists
+Full documentation: [chrystyan96.github.io/ExecFence](https://chrystyan96.github.io/ExecFence/)
 
-ExecFence was created after looking at a recurring developer-workflow failure mode: malicious code is placed where normal project commands execute it. Recent public reporting includes fake interview repositories used to compromise developers, Visual Studio Code task abuse, package lifecycle hooks that deploy malware during install, and compromised npm releases that execute RAT payloads on developer machines.
+Technical detection reference: [Detection Model](https://chrystyan96.github.io/ExecFence/detection)
 
-Relevant background:
+OpenAI Skills catalog PR: [openai/skills#385](https://github.com/openai/skills/pull/385)
+
+## Why It Exists
+
+Public incidents increasingly show developer machines being targeted through project execution paths, not only through deployed applications. Examples include fake interview repositories, malicious package lifecycle hooks, suspicious editor tasks, and compromised packages that execute during install or build.
+
+Background reading:
 
 - Trend Micro: [Void Dokkaebi Uses Fake Job Interview Lure to Spread Malware via Code Repositories](https://www.trendmicro.com/en_us/research/26/d/void-dokkaebi-uses-fake-job-interview-lure-to-spread-malware-via-code-repositories.html)
 - Microsoft: [Contagious Interview: Malware delivered through fake developer job interviews](https://www.microsoft.com/en-us/security/blog/2026/03/11/contagious-interview-malware-delivered-through-fake-developer-job-interviews/)
-- Datadog: [Compromised axios npm package delivers cross-platform RAT](https://securitylabs.datadoghq.com/articles/axios-npm-supply-chain-compromise/)
+- Datadog Security Labs: [Compromised axios npm package delivers cross-platform RAT](https://securitylabs.datadoghq.com/articles/axios-npm-supply-chain-compromise/)
 
-ExecFence does not replace endpoint security or dependency review. It adds a local fence at the point where suspicious repository code would become active: build, dev, test, install, pack, publish, CI, and agent execution.
+ExecFence does not replace antivirus, EDR, dependency review, secret scanning, or SCA. It adds a local fence at the moment suspicious repository content would become active: before `test`, `build`, `dev`, `pack`, `publish`, CI, or agent-driven execution.
 
-Full project documentation is published at [https://chrystyan96.github.io/ExecFence/](https://chrystyan96.github.io/ExecFence/) and mirrored in [docs/README.md](docs/README.md).
+## Two Ways To Use ExecFence
 
-## Quick Start
+ExecFence has two installation/use paths. They are related, but they do not do the same thing.
 
-There are two different things named ExecFence:
-
-- **ExecFence CLI from npm**: runs in your terminal or CI through `npx --yes execfence ...`. This is the scanner/runtime gate that actually inspects files, blocks commands, writes reports, audits lockfiles, and runs `ci`, `pack-audit`, `sandbox`, etc.
-- **ExecFence skill for Codex/agents**: runs inside the coding agent as instructions. It does not scan by itself. It tells the agent when and how to call the CLI, when to wire guardrails, and when not to ignore findings.
-
-Most users should use the CLI directly. Agent users should install the skill as well so Codex knows to use the CLI before running risky project commands.
-
-Run the CLI runtime gate or a scan without installing the package globally:
-
-```sh
-npx --yes execfence run -- npm test
-npx --yes execfence run --sandbox-mode audit -- npm test
-npx --yes execfence scan
-npx --yes execfence scan --mode audit
-```
-
-Initialize common project hooks:
-
-```sh
-npx --yes execfence init --preset auto
-```
-
-Install the Codex/agent skill so Codex and other configured agents know when to use ExecFence:
-
-```sh
-npx --yes execfence install-skill
-```
-
-Install portable rules for non-Codex agents in a project:
-
-```sh
-npx --yes execfence install-agent-rules --scope project
-```
-
-Print the portable instruction snippet:
-
-```sh
-npx --yes execfence print-agents-snippet
-```
-
-## CLI vs Skill
-
-The npm package and the skill solve different parts of the problem.
-
-| Install/use path | Runs where | What it does | Use when |
+| Path | Runs where | What it does | Use it when |
 | --- | --- | --- | --- |
-| `npx --yes execfence scan` / `run` / `ci` | Terminal, shell, CI, package scripts | Actually scans files, gates commands, writes reports, audits dependencies, and returns exit codes | You want protection now, independent of any agent |
-| `npx --yes execfence install-skill` | Terminal once, then Codex/agents read the installed instructions | Installs agent instructions and defaults so Codex knows to call ExecFence before risky actions | You use Codex or coding agents on persistent projects |
-| `npx --yes execfence install-agent-rules --scope project` | Terminal once, then project agent files are read by agents | Adds portable project-local rules for Codex, Claude, Gemini, Cursor, Copilot, Continue, Windsurf, Aider, Roo, and Cline | You want the repository itself to instruct agents to use ExecFence |
+| npm CLI: `npx --yes execfence ...` | Terminal, package scripts, CI | Actually scans files, gates commands, writes reports, audits dependencies, and returns blocking exit codes | You want protection now, without relying on an agent |
+| Agent skill: `npx --yes execfence install-skill` | Codex and compatible agent instruction systems | Installs instructions telling agents when and how to use the ExecFence CLI | You use Codex or other coding agents on persistent projects |
+| Project agent rules: `install-agent-rules --scope project` | Repository-local agent instruction files | Carries ExecFence rules with the project so agents see them in future sessions | You want the repo itself to instruct agents to run ExecFence |
 
-The skill is for coding agents. It tells the agent to add ExecFence when it is creating or modifying persistent projects that may run code, touch the local machine, access credentials, use package hooks, or expose agent/MCP tools. The skill does not replace the CLI; it should make the agent run the CLI.
+The CLI is the enforcement tool. The skill is the operating rule for agents. For agent-heavy work, install both.
 
-Install it:
+## Use The npm CLI
 
-```sh
-npx --yes execfence install-skill
-```
-
-That command installs the Codex skill, writes global defaults to `<home>/.agents/skills/execfence/defaults.json`, and updates common global agent instruction files with the ExecFence rule.
-
-Add project-local agent rules:
+Run ExecFence without a global install:
 
 ```sh
-npx --yes execfence install-agent-rules --scope project
-npx --yes execfence install-agent-rules --verify --scope project
+npx --yes execfence scan
 ```
 
-What the skill should make the agent do:
-
-1. Detect the stack: Node, Go, Python, Rust, Tauri, Electron, GitHub Actions, VS Code tasks, MCP/tool configs, and agent instruction files.
-2. Run or recommend `npx --yes execfence init --preset auto`.
-3. Prefer `execfence run -- <command>` for test/build/dev commands.
-4. Use `execfence run --sandbox-mode audit -- <command>` for higher-risk local execution.
-5. Run `execfence ci`, `execfence coverage`, `execfence deps diff`, `execfence pack-audit`, and `execfence agent-report` when the project has matching surfaces.
-6. Never ignore `critical` or `high` findings unless a reviewed, unexpired baseline entry exists.
-7. Preserve `.execfence/reports/*.json` evidence when something blocks.
-
-## What It Blocks
-
-Known injected JavaScript loader IoCs:
-
-- `global.i='2-30-4'`
-- `_$_a7ae`
-- `_$_d609`
-- `tLl(5394)`
-- `global['_V']`
-- `api.trongrid.io/v1/accounts`
-- `fullnode.mainnet.aptoslabs.com/v1/accounts`
-- `bsc-dataseed.binance.org`
-- `bsc-rpc.publicnode.com`
-- `eth_getTransactionByHash`
-- `temp_auto_push`
-
-Suspicious execution patterns:
-
-- `.vscode/tasks.json` with `"runOn": "folderOpen"`
-- hidden Node loader patterns such as `global[...] = require`
-- dynamic `Function`/`constructor` loaders combined with `eval`, `fromCharCode`, or `child_process`
-- very long obfuscated JavaScript lines with loader markers
-- executable artifacts such as `.exe`, `.dll`, `.bat`, `.cmd`, `.scr`, `.vbs`, `.wsf` inside source/build-input folders
-- suspicious npm lifecycle scripts and insecure or suspicious package-manager lockfile URLs
-
-## Default Ignored Paths
-
-The scanner ignores normal dependency/build/cache folders:
-
-`.git`, `node_modules`, `dist`, `build`, `.angular`, `coverage`, `target`, `target-*`, `bin`, `.pytest_cache`, `test-results`, `visual-checks`, and similar generated output paths.
-
-## Commands
-
-```sh
-execfence run [--sandbox] [--sandbox-mode audit|enforce] [--allow-degraded] [--record-artifacts] [--deny-on-new-executable] -- <command>
-execfence scan [paths...]
-execfence scan [--mode block|audit] [--fail-on critical,high] [--changed-only] [--full-ioc-scan] [--report <dir>] --ci [--format text|json|sarif] [paths...]
-execfence diff-scan [--staged] [--mode block|audit]
-execfence scan-history [--max-commits <n>] [--format text|json|sarif] [--include-self]
-execfence coverage [--fix-suggestions] [--format text|json]
-execfence wire [--dry-run|--apply]
-execfence adopt [--write-baseline]
-execfence ci [--base-ref <ref>]
-execfence deps diff [--base-ref <ref>]
-execfence manifest
-execfence manifest diff
-execfence report [--dir <dir>] [paths...]
-execfence report --html <report.json>
-execfence report --markdown <report.json>
-execfence reports list|latest|show <id>|open <id>|diff <a> <b>|compare [--since <report>]|regression [--since <report>]|prune
-execfence incident create|bundle|timeline --from-report <report.json>
-execfence baseline add --from-report <report.json> --owner <owner> --reason <reason> --expires-at <date>
-execfence enrich [--preview] <report.json>
-execfence policy explain|test [--policy-pack <name>]
-execfence sandbox init|doctor|plan|explain|install-helper|uninstall-helper|helper-audit
-execfence helper audit
-execfence pack-audit
-execfence trust add <path|registry|action|scope> [--type file|registry|action|package-scope] --reason <reason> --owner <owner> --expires-at <date>
-execfence trust audit
-execfence agent-report
-execfence pr-comment --report <report.json>
-execfence doctor
-execfence explain <finding-id>
-execfence init [--preset auto|node|go|tauri|python|rust] [--dry-run]
-execfence detect
-execfence install-hooks
-execfence install-skill [--codex-home <path>] [--home <path>]
-execfence install-agent-rules [--scope global|project|both] [--verify] [--home <path>] [--project <path>]
-execfence publish [--real]
-execfence print-agents-snippet
-```
-
-## Files, Logs, and Configuration
-
-`execfence` does not keep a background daemon. Normal command output goes to the terminal or CI log. Every blocking-capable command writes a new structured JSON evidence report under `.execfence/reports/`.
-
-Project-level files:
-
-| File or directory | Created by | Purpose |
-| --- | --- | --- |
-| `.execfence/config/execfence.json` | `init` | Main project policy: mode, severities, roots, policy pack, reports, allowlists, custom signatures, and feature toggles. |
-| `.execfence/config/signatures.json` | `init` / user/team | Optional project IoCs and regex detections. The path is configurable with `signaturesFile`. |
-| `.execfence/config/baseline.json` | `init` / user/team | Optional reviewed exceptions for existing findings. The path is configurable with `baselineFile`. |
-| `.execfence/config/sandbox.json` | `init` / `sandbox init` | Sandbox policy for `execfence run --sandbox`, including profile, filesystem, process, network, and helper metadata settings. |
-| `.execfence/manifest.json` | `manifest` | Execution-surface inventory for package scripts, Makefiles, workflows, VS Code tasks, hooks, language build files, and agent rules. |
-| `.execfence/reports/<project>_<datetime>.json` | `run`, `scan`, `diff-scan`, `scan-history`, `doctor`, or `report` | Machine-readable evidence bundle with findings, hashes, snippets, git blame, recent commits, command, config, local analysis, runtime trace when available, enrichment, and research queries. |
-| `.execfence/cache/enrichment/` | report/enrich commands | Local cache for public-source enrichment of critical/high findings. |
-| `.execfence/trust/*.json` | `trust add` | Trust stores for reviewed files, actions, registries, package scopes, and package sources. |
-| `.execfence/quarantine/<report-id>/metadata.json` | report commands | Quarantine metadata only; ExecFence does not remove suspicious payloads automatically. |
-| `.gitignore` | `init` / scan commands | Keeps `.execfence/reports/` out of git unless `reportsGitignore` is `false`. |
-| `.git/hooks/pre-commit` | `install-hooks` | Local pre-commit scan hook. |
-| agent instruction files | `install-agent-rules` / `install-skill` | Portable instructions for Codex, Claude, Gemini, Cursor, Copilot, Continue, Windsurf, Aider, Roo, and Cline. |
-| `<home>/.agents/skills/execfence/defaults.json` | `install-skill` | Read-only global defaults for agents and the skill; project config wins. |
-
-The default report directory is `.execfence/reports` under the project root. ExecFence ignores `.execfence/` during scans so report bundles and config IoCs do not poison later scan output.
-
-Copyable examples are available in `examples/`. JSON schemas are published under `schema/` for the main config, V2/V3 reports, sandbox policy, external signatures, and reviewed baseline files.
-
-## Sandbox Mode
-
-V3 adds a local sandbox policy surface for commands that execute project code:
-
-```sh
-execfence sandbox init
-execfence sandbox doctor
-execfence sandbox plan -- npm test
-execfence run --sandbox-mode audit -- npm test
-execfence run --sandbox -- npm test
-```
-
-`--sandbox-mode audit` records the sandbox profile, capability matrix, intended filesystem/process/network decisions, and post-run evidence without promising hard isolation. `--sandbox` is equivalent to `--sandbox-mode enforce`; if the required filesystem, process, or network enforcement is unavailable, ExecFence blocks before executing the command and explains the missing capability. Downgrade is never silent: use `--sandbox-mode audit` or explicit `--allow-degraded`.
-
-The base CLI does not require a sandbox helper. Optional helpers are validated through metadata at `.execfence/helper/execfence-helper.json`:
-
-```sh
-execfence helper audit
-execfence sandbox install-helper --metadata verified-helper.json
-execfence sandbox uninstall-helper
-```
-
-## Configuration
-
-`init` creates `.execfence/config/execfence.json`, `.execfence/config/signatures.json`, `.execfence/config/baseline.json`, and `.execfence/reports/` when they do not exist:
-
-```json
-{
-  "$schema": "https://raw.githubusercontent.com/chrystyan96/execfence/master/schema/execfence.schema.json",
-  "policyPack": "baseline",
-  "mode": "block",
-  "blockSeverities": ["critical", "high"],
-  "warnSeverities": ["medium", "low"],
-  "roots": ["backend-go", "backend", "frontend", "desktop", "packages", "scripts", ".github", ".vscode"],
-  "ignoreDirs": [],
-  "skipFiles": [],
-  "allowExecutables": [
-    { "path": "tools/reviewed-helper.exe", "sha256": "0000000000000000000000000000000000000000000000000000000000000000" }
-  ],
-  "extraSignatures": [],
-  "extraRegexSignatures": [],
-  "signaturesFile": ".execfence/config/signatures.json",
-  "baselineFile": ".execfence/config/baseline.json",
-  "sandboxFile": ".execfence/config/sandbox.json",
-  "reportsDir": ".execfence/reports",
-  "reportsGitignore": true,
-  "runtimeTrace": {
-    "enabled": true,
-    "postRunScan": true,
-    "captureGitStatus": true,
-    "redactEnv": true,
-    "snapshotFiles": true,
-    "recordArtifacts": false,
-    "denyOnNewExecutable": false
-  },
-  "analysis": {
-    "webEnrichment": {
-      "enabled": true,
-      "automaticForSeverities": ["critical", "high"],
-      "maxQueriesPerFinding": 3,
-      "allowedDomains": [],
-      "timeoutMs": 4000,
-      "cacheTtlMs": 86400000
-    }
-  },
-  "manifest": {
-    "path": ".execfence/manifest.json",
-    "requireRunWrapper": true,
-    "blockNewEntrypoints": true,
-    "sensitiveEntrypoints": ["build", "test", "dev", "start", "serve", "watch", "prepare", "install", "postinstall"]
-  },
-  "ci": {
-    "enabled": true,
-    "baseRef": "HEAD",
-    "checks": ["scan", "manifest-diff", "deps-diff", "pack-audit", "trust-audit"]
-  },
-  "wire": {
-    "packageScripts": true,
-    "workflows": true,
-    "makefile": true,
-    "vscodeTasks": true
-  },
-  "deps": {
-    "detectRegistryDrift": true,
-    "detectSuspiciousSources": true,
-    "detectLifecycleEntries": true,
-    "detectBinEntries": true,
-    "detectTyposquatting": true
-  },
-  "adopt": {
-    "writeSuggestedBaseline": false,
-    "blockDuringAdoption": false
-  },
-  "policy": {
-    "customPoliciesDir": ".execfence/config/policies",
-    "requiredOwners": {},
-    "requireSignedPolicyFiles": false
-  },
-  "trustStore": {
-    "files": ".execfence/trust/files.json",
-    "actions": ".execfence/trust/actions.json",
-    "registries": ".execfence/trust/registries.json",
-    "packageScopes": ".execfence/trust/package-scopes.json",
-    "packageSources": ".execfence/trust/package-sources.json"
-  },
-  "htmlReport": {
-    "enabled": true,
-    "includeRuntimeTrace": true,
-    "includeManifest": true
-  },
-  "reportRetention": {
-    "maxReports": 100,
-    "maxAgeDays": 90
-  },
-  "reports": {
-    "retention": {
-      "maxReports": 100,
-      "maxAgeDays": 90
-    }
-  },
-  "redaction": {
-    "redactLocalPaths": true,
-    "redactEnv": true,
-    "extraPatterns": []
-  },
-  "auditAllPackageScripts": false
-}
-```
-
-Configurable fields:
-
-| Field | What it controls |
-| --- | --- |
-| `policyPack` | Enables stack-aware defaults: `baseline`, `web`, `desktop`, `node`, `go`, `python`, `rust`, `agentic`, or `strict`. |
-| `mode` | `block` fails the command for blocked severities; `audit` reports without failing. |
-| `blockSeverities` | Severities that fail in block mode. Defaults to `critical` and `high`. |
-| `warnSeverities` | Severities shown as warnings when not blocked. Defaults to `medium` and `low`. |
-| `roots` | Directories/files to scan when no explicit paths are passed. |
-| `ignoreDirs` | Directory names to skip recursively, useful for custom generated output folders. |
-| `skipFiles` | Exact file names to skip. Use narrowly for generated files that cannot be moved. |
-| `allowExecutables` | Reviewed executable artifacts allowed in source/build-input folders, preferably pinned by SHA-256. |
-| `extraSignatures` | Literal project-specific IoCs. |
-| `extraRegexSignatures` | Reviewed regex detections for project-specific patterns. |
-| `signaturesFile` | Path to an external signatures JSON file. |
-| `baselineFile` | Path to a reviewed baseline/exceptions JSON file. |
-| `reportsDir` | Directory for automatic JSON evidence reports. |
-| `reportsGitignore` | Whether ExecFence keeps the reports directory in `.gitignore`. |
-| `runtimeTrace` | Enables preflight/post-run trace data for `execfence run`. |
-| `analysis.webEnrichment` | Public-source enrichment settings for critical/high findings. Queries are kept to IoCs, hashes, package names, domains, and rule IDs. |
-| `manifest` | Path and policy for execution entrypoint inventory and wrapper requirements. |
-| `ci` | Checks run by `execfence ci`: scan, manifest diff, dependency diff, pack audit, and trust audit. |
-| `wire` | Which project entrypoint files `execfence wire` may suggest or update. |
-| `deps` | Deep lockfile diff checks for registry drift, suspicious sources, lifecycle/bin entries, dependency confusion, and local typosquatting. |
-| `adopt` | Low-noise first-run adoption behavior, including suggested baselines without changing blocking policy. |
-| `policy` | Local organization controls, custom policy pack directory, required owners, and optional signing flags. |
-| `trustStore` | Paths for file/action/registry/package-scope/package-source trust stores. |
-| `htmlReport` | Local HTML report rendering settings. |
-| `reportRetention` | Local retention hints for generated evidence reports. |
-| `reports.retention` | V2.1 retention settings used by automatic report pruning. |
-| `redaction` | Redaction settings for runtime evidence and enrichment queries. |
-| `workflowHardening` | Enables/disables GitHub Actions hardening checks. |
-| `archiveAudit` | Enables/disables source-tree archive checks for `.zip`, `.tar`, `.tgz`, and `.asar`. |
-| `auditAllPackageScripts` | Audits all package scripts instead of only install/prepare lifecycle scripts. |
-
-Use `allowExecutables` sparingly for reviewed binaries that are intentionally committed.
-Prefer `{ "path": "...", "sha256": "..." }` entries so a reviewed binary cannot be silently replaced.
-Use `extraSignatures` for literal project-specific IoCs and `extraRegexSignatures` for reviewed regex detections.
-
-For larger teams, keep project-specific detections in `.execfence/config/signatures.json`:
-
-```json
-{
-  "$schema": "https://raw.githubusercontent.com/chrystyan96/execfence/master/schema/execfence-signatures.schema.json",
-  "exact": [{ "id": "team-ioc", "value": "bad-domain.example" }],
-  "regex": [{ "id": "team-wallet-marker", "pattern": "wallet-[0-9]+" }]
-}
-```
-
-`mode: "audit"` reports findings without failing the command. `mode: "block"` fails only for configured `blockSeverities`, which default to `critical` and `high`.
-
-Policy packs are available for `baseline`, `web`, `desktop`, `node`, `go`, `python`, `rust`, `agentic`, and `strict`.
-
-Use `.execfence/config/baseline.json` to suppress reviewed existing findings without weakening future detections:
-
-```json
-{
-  "$schema": "https://raw.githubusercontent.com/chrystyan96/execfence/master/schema/execfence-baseline.schema.json",
-  "findings": [
-    {
-      "findingId": "suspicious-package-script",
-      "file": "package.json",
-      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
-      "reason": "reviewed legacy install hook",
-      "owner": "security",
-      "expiresAt": "2026-12-31"
-    }
-  ]
-}
-```
-
-## Presets
-
-`init --preset auto` detects the stack. Explicit presets are available for `node`, `go`, `tauri`, `python`, and `rust`.
-
-Current integrations:
-
-- Node: adds `execfence:scan`, wraps existing `test` and `build` with `execfence run --`, and prepends existing `prestart`, `prebuild`, `pretest`, and `prewatch` hooks.
-- Go: adds a guarded `Makefile` target when requested and wires `build`, `test`, `test-race`, and `vet`.
-- Python: adds a pytest guard test when `pyproject.toml` is present.
-- GitHub Actions: adds `.github/workflows/execfence.yml` when workflows already exist.
-
-## Runtime Gate
-
-Use `execfence run -- <command>` for commands that execute project code:
+Gate a command before it runs:
 
 ```sh
 npx --yes execfence run -- npm test
 npx --yes execfence run -- npm run build
-npx --yes execfence run -- go test ./...
-npx --yes execfence run --record-artifacts --deny-on-new-executable -- npm test
 ```
 
-`run` performs a preflight scan, blocks before execution when configured severities are found, executes the command when clean, records a lightweight local runtime trace, snapshots file changes, and rescans changed files afterwards. It does not implement a sandbox or network block in V2.
-
-Generate and compare execution manifests:
-
-```sh
-npx --yes execfence manifest
-npx --yes execfence manifest diff
-```
-
-Wire existing entrypoints to the runtime gate:
-
-```sh
-npx --yes execfence wire --dry-run
-npx --yes execfence wire --apply
-```
-
-For first adoption in existing repositories, use audit-first mode:
-
-```sh
-npx --yes execfence adopt
-npx --yes execfence adopt --write-baseline
-```
-
-`adopt` produces a correction plan, wiring suggestions, dependency/package checks, and an optional `.execfence/config/baseline.suggested.json` that still requires owner, reason, expiry, and review before use.
-
-## CI Output
-
-Use JSON or SARIF in CI:
+Run the CI guardrail bundle:
 
 ```sh
 npx --yes execfence ci
-npx --yes execfence scan --ci --format json
-npx --yes execfence scan --ci --format sarif > execfence.sarif
 ```
 
-`execfence ci` is the V2.1 aggregate gate. It runs scan, manifest diff, dependency diff, package-content audit, trust audit, writes a report, and fails on configured blocking severities.
-
-The repository includes `.github/workflows/ci.yml`, which runs tests, scan, SARIF generation, and package dry-run on Ubuntu, Windows, and macOS. `.github/workflows/scorecard.yml` runs OpenSSF Scorecard as an optional repository-health signal.
-
-## Git Workflows
-
-Scan only changed files:
+Initialize project config:
 
 ```sh
-npx --yes execfence diff-scan
-npx --yes execfence diff-scan --staged
-```
-
-Scan history for known IoCs:
-
-```sh
-npx --yes execfence scan-history --max-commits 1000
-```
-
-When the package scans its own repository, history scanning skips documented signatures by default. Use `--include-self` when you intentionally want to audit the package's own signature history.
-
-Install a pre-commit hook:
-
-```sh
-npx --yes execfence install-hooks
-```
-
-Explain a finding:
-
-```sh
-npx --yes execfence explain suspicious-package-script
+npx --yes execfence init --preset auto
 ```
 
 Check whether build/dev/test entrypoints are protected:
 
 ```sh
 npx --yes execfence coverage
-npx --yes execfence coverage --fix-suggestions
 ```
 
-Generate or redirect an evidence bundle without deleting suspicious files. Runtime and scan commands also generate reports automatically:
+Preview or apply wrappers around risky entrypoints:
 
 ```sh
-npx --yes execfence run -- npm test
-npx --yes execfence scan
-npx --yes execfence scan --report .execfence/reports
-npx --yes execfence report --dir .execfence/reports
+npx --yes execfence wire --dry-run
+npx --yes execfence wire --apply
 ```
 
-Investigate reports locally:
+Audit package contents before publishing:
 
 ```sh
-npx --yes execfence reports list
-npx --yes execfence reports latest
-npx --yes execfence reports show <report-id>
-npx --yes execfence reports open <report-id>
-npx --yes execfence reports diff <old-report.json> <new-report.json>
-npx --yes execfence reports compare --since <old-report.json>
-npx --yes execfence reports regression --since <old-report.json>
-npx --yes execfence report --html .execfence/reports/<report>.json
-npx --yes execfence report --markdown .execfence/reports/<report>.json
-npx --yes execfence incident create --from-report .execfence/reports/<report>.json
-npx --yes execfence incident bundle --from-report .execfence/reports/<report>.json
-npx --yes execfence incident timeline --from-report .execfence/reports/<report>.json
-npx --yes execfence baseline add --from-report .execfence/reports/<report>.json --owner security --reason "reviewed false positive" --expires-at 2026-12-31
-npx --yes execfence enrich --preview .execfence/reports/<report>.json
-npx --yes execfence pr-comment --report .execfence/reports/<report>.json
-```
-
-Explain and validate policies:
-
-```sh
-npx --yes execfence policy explain
-npx --yes execfence policy explain --policy-pack strict
-npx --yes execfence policy test
-```
-
-Custom policy packs live in `.execfence/config/policies/<name>.json` and are selected with `policyPack: "<name>"` or `--policy-pack <name>`.
-
-Audit supply-chain and trust metadata:
-
-```sh
-npx --yes execfence deps diff
 npx --yes execfence pack-audit
-npx --yes execfence trust add tools/reviewed-helper.exe --reason "reviewed helper" --owner security --expires-at 2026-12-31
-npx --yes execfence trust add https://registry.npmjs.org --type registry --reason "official npm registry" --owner security --expires-at 2026-12-31
-npx --yes execfence trust add @company --type package-scope --reason "internal scope" --owner security --expires-at 2026-12-31
-npx --yes execfence trust audit
-npx --yes execfence agent-report
 ```
 
-Verify the scanner blocks a temporary known-bad fixture in the current environment:
+Use sandbox planning/audit mode:
 
 ```sh
-npx --yes execfence doctor
+npx --yes execfence sandbox doctor
+npx --yes execfence sandbox plan -- npm test
+npx --yes execfence run --sandbox-mode audit -- npm test
 ```
 
-`install-skill` writes:
-
-- `<codex-home>/skills/execfence/SKILL.md`
-- `<codex-home>/skills/execfence/defaults.json`
-- `<codex-home>/AGENTS.md`, inserting or replacing a marker-bounded `ExecFence` section
-- `<home>/.agents/skills/execfence/defaults.json`
-- `<home>/.codex/AGENTS.md`
-- `<home>/.claude/CLAUDE.md`
-- `<home>/.gemini/GEMINI.md`
-
-`install-agent-rules --scope project` writes portable project-level instruction files:
-
-- `AGENTS.md`
-- `CLAUDE.md`
-- `GEMINI.md`
-- `.cursor/rules/execfence.mdc`
-- `.github/copilot-instructions.md`
-- `.continue/rules/execfence.md`
-- `.windsurf/rules/execfence.md`
-- `.aider/execfence.md`
-- `.roo/rules/execfence.md`
-- `.clinerules`
-
-`install-agent-rules --scope both` writes both global and project-level rules.
-`install-agent-rules --verify --scope both` checks whether those rule files exist and contain a guardrails instruction.
-
-## Publishing
-
-Suggested first release flow:
+Use sandbox enforcement when available:
 
 ```sh
-npm test
-npm run scan
-npm pack --dry-run
-git init
-git add .
-git commit -m "Create ExecFence CLI"
-git branch -M master
-git remote add origin https://github.com/chrystyan96/execfence.git
-git push -u origin master
-npm publish --access public --provenance
+npx --yes execfence run --sandbox -- npm test
 ```
 
-The repository includes `.github/workflows/release.yml` for manual npm releases. It bumps the requested version, updates `CHANGELOG.md`, creates the commit/tag, and publishes with provenance. Configure npm Trusted Publishing for `chrystyan96/execfence` with workflow filename `release.yml`; npm will use OIDC and publish provenance for that workflow.
+If the requested enforcement capability is unavailable, ExecFence should block before execution and explain what is missing. It does not silently downgrade enforcement.
 
-The packaged helper runs the safe release checks:
+## Use The Skill
+
+Install the skill:
 
 ```sh
-npx --yes execfence publish
+npx --yes execfence install-skill
 ```
 
-After `npm login`, publish for real:
+The skill is for Codex and compatible coding agents. It teaches the agent to:
+
+- run `execfence scan` before risky build/dev/test actions
+- prefer `execfence run -- <command>` when executing project commands
+- use sandbox audit/planning when available
+- avoid ignoring `critical` or `high` findings without an explicit, justified baseline
+- preserve `.execfence/reports/` evidence instead of deleting suspicious files automatically
+- check agent/MCP/tool configuration changes with `execfence agent-report`
+
+The skill does not scan a repository by itself. It makes the agent call the CLI.
+
+Skill installation writes global defaults under:
+
+```text
+<home>/.agents/skills/execfence/defaults.json
+```
+
+Treat that file as package/skill-owned reference data. Users should normally edit project config in `.execfence/config/`, not the global defaults file.
+
+## Add Project-Local Agent Rules
+
+To make a repository carry ExecFence guidance for future agent sessions:
 
 ```sh
-npx --yes execfence publish --real
+npx --yes execfence install-agent-rules --scope project
 ```
 
-After publish, users can run:
+Verify configured rules:
 
 ```sh
-npx --yes execfence scan
+npx --yes execfence install-agent-rules --verify
 ```
 
-## Scope
+These rules are intended for Codex, Claude, Gemini, Cursor, Copilot, Continue, Windsurf, Aider, Roo, Cline, and similar tools. They tell agents to use the CLI before executing project code.
 
-This is a repo-level fail-fast guard. It does not replace antivirus, EDR, secret scanning, software composition analysis, sandboxing, or credential rotation.
+## Project Configuration
+
+After `init`, ExecFence uses a project-local `.execfence/` directory:
+
+```text
+.execfence/
+  config/
+    execfence.json
+    signatures.json
+    baseline.json
+    sandbox.json
+  reports/
+  cache/
+  quarantine/
+  trust/
+  manifest.json
+```
+
+Main user-editable files:
+
+| File | Purpose |
+| --- | --- |
+| `.execfence/config/execfence.json` | Main project policy: mode, policy packs, fail/warn severities, reports, enrichment, CI behavior |
+| `.execfence/config/signatures.json` | Project-specific detection signatures |
+| `.execfence/config/baseline.json` | Time-bound, owner-backed exceptions for known findings |
+| `.execfence/config/sandbox.json` | Sandbox audit/enforcement profile and filesystem/process/network policy |
+| `.execfence/trust/*.json` | Trusted files, registries, package scopes, actions, and package sources |
+
+Reports are written to `.execfence/reports/` by default. ExecFence adds this directory to `.gitignore` unless project config sets reports to be versioned.
+
+## When ExecFence Blocks
+
+Do not rerun the same command outside ExecFence just to get past the block. Start with the report:
+
+```sh
+npx --yes execfence reports latest
+npx --yes execfence reports open
+```
+
+Create an incident bundle:
+
+```sh
+npx --yes execfence incident bundle --from-report .execfence/reports/<report>.json
+```
+
+If a finding is legitimate and must be allowed, baseline it with an owner, reason, expiry, and hash:
+
+```sh
+npx --yes execfence baseline add --from-report .execfence/reports/<report>.json
+```
+
+Baselines are meant for reviewed exceptions, not for forcing a build through unknown `critical` or `high` findings.
+
+## Common Commands
+
+| Command | Purpose |
+| --- | --- |
+| `execfence scan` | Static project scan |
+| `execfence run -- <command>` | Preflight scan, command execution, post-run evidence report |
+| `execfence ci` | Combined CI guardrail bundle |
+| `execfence coverage` | Detect unprotected build/dev/test entrypoints |
+| `execfence wire --dry-run` | Show wrapper changes without writing |
+| `execfence wire --apply` | Apply wrappers where supported |
+| `execfence manifest` | Generate execution-entrypoint manifest |
+| `execfence manifest diff` | Detect new or changed execution entrypoints |
+| `execfence deps diff` | Compare dependency/lockfile risk |
+| `execfence pack-audit` | Audit package contents before publish |
+| `execfence agent-report` | Review agent, MCP, tool, and instruction-file changes |
+| `execfence reports latest` | Show the latest report |
+| `execfence report --html <report.json>` | Generate a local HTML report |
+| `execfence sandbox doctor` | Check local sandbox capability |
+| `execfence sandbox plan -- <command>` | Explain what sandbox policy would allow/block |
+
+## More Documentation
+
+- Project overview and launch article: [GitHub Pages](https://chrystyan96.github.io/ExecFence/)
+- Technical detection details: [Detection Model](https://chrystyan96.github.io/ExecFence/detection)
+- Source documentation: [docs/](docs/)
+- License: [Apache-2.0](LICENSE)
