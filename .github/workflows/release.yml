@@ -27,6 +27,7 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: node bin/execfence.js run -- npm test
+      - run: node bin/execfence.js ci
       - run: npm run scan
       - run: node bin/execfence.js scan --ci --format sarif . > execfence.sarif
       - run: node bin/execfence.js manifest

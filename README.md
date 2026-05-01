@@ -72,21 +72,25 @@ The scanner ignores normal dependency/build/cache folders:
 ## Commands
 
 ```sh
-execfence run -- <command>
+execfence run [--record-artifacts] [--deny-on-new-executable] -- <command>
 execfence scan [paths...]
 execfence scan [--mode block|audit] [--fail-on critical,high] [--changed-only] [--full-ioc-scan] [--report <dir>] --ci [--format text|json|sarif] [paths...]
 execfence diff-scan [--staged] [--mode block|audit]
 execfence scan-history [--max-commits <n>] [--format text|json|sarif] [--include-self]
-execfence coverage [--format text|json]
+execfence coverage [--fix-suggestions] [--format text|json]
+execfence wire [--dry-run|--apply]
+execfence ci [--base-ref <ref>]
+execfence deps diff [--base-ref <ref>]
 execfence manifest
 execfence manifest diff
 execfence report [--dir <dir>] [paths...]
 execfence report --html <report.json>
-execfence reports list|show <id>|diff <a> <b>
-execfence incident create --from-report <report.json>
+execfence reports list|latest|show <id>|open <id>|diff <a> <b>|compare [--since <report>]|prune
+execfence incident create|bundle|timeline --from-report <report.json>
+execfence baseline add --from-report <report.json> --owner <owner> --reason <reason> --expires-at <date>
 execfence enrich <report.json>
 execfence pack-audit
-execfence trust add <path> --reason <reason> --owner <owner> --expires-at <date>
+execfence trust add <path|registry|action|scope> [--type file|registry|action|package-scope] --reason <reason> --owner <owner> --expires-at <date>
 execfence trust audit
 execfence agent-report
 execfence pr-comment --report <report.json>
@@ -115,7 +119,7 @@ Project-level files:
 | `.execfence/manifest.json` | `manifest` | Execution-surface inventory for package scripts, Makefiles, workflows, VS Code tasks, hooks, language build files, and agent rules. |
 | `.execfence/reports/<project>_<datetime>.json` | `run`, `scan`, `diff-scan`, `scan-history`, `doctor`, or `report` | Machine-readable evidence bundle with findings, hashes, snippets, git blame, recent commits, command, config, local analysis, runtime trace when available, enrichment, and research queries. |
 | `.execfence/cache/enrichment/` | report/enrich commands | Local cache for public-source enrichment of critical/high findings. |
-| `.execfence/trust/*.json` | `trust add` | Hash-pinned trust stores for reviewed files, actions, and registries. |
+| `.execfence/trust/*.json` | `trust add` | Trust stores for reviewed files, actions, registries, package scopes, and package sources. |
 | `.execfence/quarantine/<report-id>/metadata.json` | report commands | Quarantine metadata only; ExecFence does not remove suspicious payloads automatically. |
 | `.gitignore` | `init` / scan commands | Keeps `.execfence/reports/` out of git unless `reportsGitignore` is `false`. |
 | `.git/hooks/pre-commit` | `install-hooks` | Local pre-commit scan hook. |
@@ -168,16 +172,48 @@ Copyable examples are available in `examples/`. JSON schemas are published under
   "manifest": {
     "path": ".execfence/manifest.json",
     "requireRunWrapper": true,
+    "blockNewEntrypoints": true,
     "sensitiveEntrypoints": ["build", "test", "dev", "start", "serve", "watch", "prepare", "install", "postinstall"]
+  },
+  "ci": {
+    "enabled": true,
+    "baseRef": "HEAD",
+    "checks": ["scan", "manifest-diff", "deps-diff", "pack-audit", "trust-audit"]
+  },
+  "wire": {
+    "packageScripts": true,
+    "workflows": true,
+    "makefile": true,
+    "vscodeTasks": true
+  },
+  "deps": {
+    "detectRegistryDrift": true,
+    "detectSuspiciousSources": true,
+    "detectLifecycleEntries": true,
+    "detectBinEntries": true,
+    "detectTyposquatting": true
   },
   "trustStore": {
     "files": ".execfence/trust/files.json",
     "actions": ".execfence/trust/actions.json",
-    "registries": ".execfence/trust/registries.json"
+    "registries": ".execfence/trust/registries.json",
+    "packageScopes": ".execfence/trust/package-scopes.json",
+    "packageSources": ".execfence/trust/package-sources.json"
+  },
+  "htmlReport": {
+    "enabled": true,
+    "includeRuntimeTrace": true,
+    "includeManifest": true
   },
   "reportRetention": {
     "maxReports": 100,
     "maxAgeDays": 90
+  },
+  "reports": {
+    "retention": {
+      "maxReports": 100,
+      "maxAgeDays": 90
+    }
   },
   "redaction": {
     "redactLocalPaths": true,
@@ -209,8 +245,13 @@ Configurable fields:
 | `runtimeTrace` | Enables preflight/post-run trace data for `execfence run`. |
 | `analysis.webEnrichment` | Public-source enrichment settings for critical/high findings. Queries are kept to IoCs, hashes, package names, domains, and rule IDs. |
 | `manifest` | Path and policy for execution entrypoint inventory and wrapper requirements. |
-| `trustStore` | Paths for hash-pinned file/action/registry trust stores. |
+| `ci` | Checks run by `execfence ci`: scan, manifest diff, dependency diff, pack audit, and trust audit. |
+| `wire` | Which project entrypoint files `execfence wire` may suggest or update. |
+| `deps` | Deep lockfile diff checks for registry drift, suspicious sources, lifecycle/bin entries, dependency confusion, and local typosquatting. |
+| `trustStore` | Paths for file/action/registry/package-scope/package-source trust stores. |
+| `htmlReport` | Local HTML report rendering settings. |
 | `reportRetention` | Local retention hints for generated evidence reports. |
+| `reports.retention` | V2.1 retention settings used by automatic report pruning. |
 | `redaction` | Redaction settings for runtime evidence and enrichment queries. |
 | `workflowHardening` | Enables/disables GitHub Actions hardening checks. |
 | `archiveAudit` | Enables/disables source-tree archive checks for `.zip`, `.tar`, `.tgz`, and `.asar`. |
@@ -271,6 +312,7 @@ Use `execfence run -- <command>` for commands that execute project code:
 npx --yes execfence run -- npm test
 npx --yes execfence run -- npm run build
 npx --yes execfence run -- go test ./...
+npx --yes execfence run --record-artifacts --deny-on-new-executable -- npm test
 ```
 
 `run` performs a preflight scan, blocks before execution when configured severities are found, executes the command when clean, records a lightweight local runtime trace, and rescans changed files afterwards. It does not implement a sandbox or network block in V2.
@@ -282,14 +324,24 @@ npx --yes execfence manifest
 npx --yes execfence manifest diff
 ```
 
+Wire existing entrypoints to the runtime gate:
+
+```sh
+npx --yes execfence wire --dry-run
+npx --yes execfence wire --apply
+```
+
 ## CI Output
 
 Use JSON or SARIF in CI:
 
 ```sh
+npx --yes execfence ci
 npx --yes execfence scan --ci --format json
 npx --yes execfence scan --ci --format sarif > execfence.sarif
 ```
+
+`execfence ci` is the V2.1 aggregate gate. It runs scan, manifest diff, dependency diff, package-content audit, trust audit, writes a report, and fails on configured blocking severities.
 
 The repository includes `.github/workflows/ci.yml`, which runs tests, scan, SARIF generation, and package dry-run on Ubuntu, Windows, and macOS. `.github/workflows/scorecard.yml` runs OpenSSF Scorecard as an optional repository-health signal.
 
@@ -326,6 +378,7 @@ Check whether build/dev/test entrypoints are protected:
 
 ```sh
 npx --yes execfence coverage
+npx --yes execfence coverage --fix-suggestions
 ```
 
 Generate or redirect an evidence bundle without deleting suspicious files. Runtime and scan commands also generate reports automatically:
@@ -341,18 +394,27 @@ Investigate reports locally:
 
 ```sh
 npx --yes execfence reports list
+npx --yes execfence reports latest
 npx --yes execfence reports show <report-id>
+npx --yes execfence reports open <report-id>
 npx --yes execfence reports diff <old-report.json> <new-report.json>
+npx --yes execfence reports compare --since <old-report.json>
 npx --yes execfence report --html .execfence/reports/<report>.json
 npx --yes execfence incident create --from-report .execfence/reports/<report>.json
+npx --yes execfence incident bundle --from-report .execfence/reports/<report>.json
+npx --yes execfence incident timeline --from-report .execfence/reports/<report>.json
+npx --yes execfence baseline add --from-report .execfence/reports/<report>.json --owner security --reason "reviewed false positive" --expires-at 2026-12-31
 npx --yes execfence pr-comment --report .execfence/reports/<report>.json
 ```
 
 Audit supply-chain and trust metadata:
 
 ```sh
+npx --yes execfence deps diff
 npx --yes execfence pack-audit
 npx --yes execfence trust add tools/reviewed-helper.exe --reason "reviewed helper" --owner security --expires-at 2026-12-31
+npx --yes execfence trust add https://registry.npmjs.org --type registry --reason "official npm registry" --owner security --expires-at 2026-12-31
+npx --yes execfence trust add @company --type package-scope --reason "internal scope" --owner security --expires-at 2026-12-31
 npx --yes execfence trust audit
 npx --yes execfence agent-report
 ```

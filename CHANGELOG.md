@@ -1,5 +1,12 @@
 # Changelog
 
+## v2.1.0 - 2026-05-01
+
+- Added `execfence ci` as the aggregate operational gate for scan, manifest diff, dependency diff, pack audit, trust audit, and automatic report generation.
+- Added `execfence deps diff` with dedicated parsers for npm/pnpm/yarn/bun, Cargo, Go, Poetry, and uv lockfiles plus registry drift, suspicious source, lifecycle/bin, dependency-confusion, and typosquatting findings.
+- Added `execfence wire --dry-run|--apply`, coverage fix suggestions, manifest-gate findings, richer trust stores, baseline creation from reports, report latest/open/compare/prune, incident bundles/timelines, and actionable PR comments.
+- Expanded runtime tracing with artifact metadata and `--deny-on-new-executable`, and expanded config/schema/docs for V2.1 `ci`, `wire`, `deps`, `trustStore`, `htmlReport`, and `reports.retention`.
+
 ## v2.0.0 - 2026-05-01
 
 - Added `execfence run -- <command>` as the primary local runtime gate for dev/build/test with preflight scan, blocking, lightweight trace, post-run rescan, and automatic V2 evidence reports.

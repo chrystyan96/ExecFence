@@ -8,12 +8,16 @@ const test = require('node:test');
 const { execFileSync } = require('node:child_process');
 const { runWithFence } = require('../lib/runtime');
 const { diffManifest, generateManifest, writeManifest } = require('../lib/manifest');
-const { htmlReport, incidentFromReport, listReports, diffReports, readReport } = require('../lib/investigation');
+const { htmlReport, incidentBundle, incidentFromReport, latestReport, listReports, diffReports, pruneReports, readReport } = require('../lib/investigation');
 const { indicatorsFor, enrichFindings } = require('../lib/enrichment');
 const { trustAdd, trustAudit, packAudit } = require('../lib/supply-chain');
 const { agentReport } = require('../lib/agent-report');
 const { scan } = require('../lib/scanner');
 const { writeReport } = require('../lib/report');
+const { depsDiff } = require('../lib/deps');
+const { wireProject } = require('../lib/wire');
+const { runCi } = require('../lib/ci');
+const { addBaselineFromReport } = require('../lib/baseline');
 
 function git(cwd, args) {
   return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
@@ -57,6 +61,28 @@ test('runtime gate executes clean commands and records trace evidence', () => {
   assert.equal(fs.existsSync(output), true);
 });
 
+test('runtime gate can record artifacts and deny new executable outputs', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-run-artifact-'));
+  git(root, ['init']);
+  git(root, ['config', 'user.email', 'test@example.com']);
+  git(root, ['config', 'user.name', 'Test']);
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'artifact-app' }, null, 2));
+  git(root, ['add', '.']);
+  git(root, ['commit', '-m', 'initial']);
+  const output = path.join(root, 'payload.exe');
+
+  const result = runWithFence([process.execPath, '-e', `require('fs').writeFileSync(${JSON.stringify(output)}, 'exe')`], {
+    cwd: root,
+    stdio: 'pipe',
+    recordArtifacts: true,
+    denyOnNewExecutable: true,
+  });
+
+  assert.equal(result.ok, false);
+  assert.ok(result.findings.some((finding) => finding.id === 'runtime-new-executable-artifact'));
+  assert.ok(result.runtimeTrace.artifacts.some((artifact) => artifact.file === 'payload.exe' && artifact.suspicious));
+});
+
 test('execution manifest records entrypoints and diffs new sensitive scripts', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-manifest-'));
   fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({
@@ -93,12 +119,18 @@ test('report investigation commands list, diff, html, and incident artifacts', (
   const diff = diffReports(root, suspicious.filePath, clean.filePath);
   const html = htmlReport(root, suspicious.filePath);
   const incident = incidentFromReport(root, suspicious.filePath);
+  const bundle = incidentBundle(root, suspicious.filePath);
+  const latest = latestReport(root);
 
   assert.equal(listed.length, 2);
   assert.equal(readReport(root, suspicious.filePath).report.metadata.schemaVersion, 2);
   assert.equal(diff.removedFindings.length, 1);
   assert.equal(fs.existsSync(html.htmlPath), true);
   assert.equal(fs.existsSync(incident.incidentPath), true);
+  assert.equal(fs.existsSync(path.join(bundle.bundleDir, 'report.json')), true);
+  assert.ok(latest.id);
+  const pruned = pruneReports(root, { maxReports: 1 });
+  assert.equal(pruned.remaining, 1);
 });
 
 test('enrichment builds redacted public-source work without network for rule-only findings', () => {
@@ -136,6 +168,20 @@ test('trust store pins files by hash and audits changed trusted files', () => {
   assert.equal(audit.findings[0].id, 'trusted-file-hash-mismatch');
 });
 
+test('trust store supports registries, actions, and package scopes', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-trust-types-'));
+  const registry = trustAdd(root, 'https://registry.npmjs.org', { type: 'registry', reason: 'npm', owner: 'security', expiresAt: '2999-01-01' });
+  const action = trustAdd(root, 'actions/checkout@1234567890123456789012345678901234567890', { type: 'action', reason: 'pinned', owner: 'security', expiresAt: '2999-01-01' });
+  const scope = trustAdd(root, '@company', { type: 'package-scope', reason: 'internal', owner: 'security', expiresAt: '2999-01-01' });
+
+  const audit = trustAudit(root);
+
+  assert.equal(registry.type, 'registry');
+  assert.equal(action.type, 'action');
+  assert.equal(scope.type, 'package-scope');
+  assert.equal(audit.ok, true);
+});
+
 test('pack audit flags dangerous files in npm package contents', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-pack-'));
   fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'pack-app', version: '1.0.0', files: ['payload.exe'] }, null, 2));
@@ -145,6 +191,88 @@ test('pack audit flags dangerous files in npm package contents', () => {
 
   assert.equal(result.ok, false);
   assert.ok(result.findings.some((finding) => finding.id === 'pack-dangerous-artifact'));
+});
+
+test('dependency diff flags suspicious new lockfile sources and lifecycle entries', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-deps-'));
+  git(root, ['init']);
+  git(root, ['config', 'user.email', 'test@example.com']);
+  git(root, ['config', 'user.name', 'Test']);
+  fs.writeFileSync(path.join(root, 'package-lock.json'), JSON.stringify({
+    lockfileVersion: 3,
+    packages: {
+      '': { name: 'deps-app' },
+      'node_modules/react': { version: '18.0.0', resolved: 'https://registry.npmjs.org/react/-/react-18.0.0.tgz' },
+    },
+  }, null, 2));
+  git(root, ['add', '.']);
+  git(root, ['commit', '-m', 'initial']);
+  fs.writeFileSync(path.join(root, 'package-lock.json'), JSON.stringify({
+    lockfileVersion: 3,
+    packages: {
+      '': { name: 'deps-app' },
+      'node_modules/react': { version: '18.0.0', resolved: 'https://registry.npmjs.org/react/-/react-18.0.0.tgz' },
+      'node_modules/backend-agent': { version: '1.0.0', resolved: 'https://gist.githubusercontent.com/x/y/raw/pkg.tgz', hasInstallScript: true, bin: { run: 'index.js' } },
+    },
+  }, null, 2));
+
+  const result = depsDiff(root);
+
+  assert.equal(result.ok, false);
+  assert.ok(result.findings.some((finding) => finding.id === 'dependency-new-suspicious-source'));
+  assert.ok(result.findings.some((finding) => finding.id === 'dependency-new-lifecycle-entry'));
+});
+
+test('wire can dry-run and apply execfence wrappers', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-wire-'));
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ scripts: { test: 'node --test', build: 'vite build' } }, null, 2));
+
+  const dry = wireProject(root, { dryRun: true });
+  const applied = wireProject(root, { dryRun: false });
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+
+  assert.equal(dry.dryRun, true);
+  assert.ok(dry.changes.some((change) => change.file === 'package.json'));
+  assert.equal(applied.dryRun, false);
+  assert.equal(pkg.scripts.test, 'execfence run -- node --test');
+  assert.equal(pkg.scripts['execfence:ci'], 'execfence ci');
+});
+
+test('ci command aggregates scan, manifest, deps, pack, and trust checks', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-ci-'));
+  git(root, ['init']);
+  git(root, ['config', 'user.email', 'test@example.com']);
+  git(root, ['config', 'user.name', 'Test']);
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'ci-app', version: '1.0.0', scripts: { test: 'execfence run -- node --test' } }, null, 2));
+  writeManifest(root);
+  git(root, ['add', '.']);
+  git(root, ['commit', '-m', 'initial']);
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'ci-app', version: '1.0.0', scripts: { test: 'execfence run -- node --test', build: 'vite build' } }, null, 2));
+
+  const result = runCi(root);
+
+  assert.equal(result.ok, false);
+  assert.ok(result.ci.scan);
+  assert.ok(result.ci.manifestDiff);
+  assert.ok(result.findings.some((finding) => finding.id === 'manifest-new-entrypoint'));
+});
+
+test('baseline helper adds report findings with owner reason expiry and hash', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-baseline-add-'));
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'baseline-add' }, null, 2));
+  fs.writeFileSync(path.join(root, 'tailwind.config.js'), "global.i='2-30-4';\n");
+  const report = writeReport(scan({ cwd: root, roots: ['tailwind.config.js'] }), { command: 'execfence scan' });
+
+  const result = addBaselineFromReport(root, report.filePath, {
+    owner: 'security',
+    reason: 'reviewed fixture',
+    expiresAt: '2999-01-01',
+  });
+  const baseline = JSON.parse(fs.readFileSync(result.baselinePath, 'utf8'));
+
+  assert.equal(result.added.length, 1);
+  assert.equal(baseline.findings[0].owner, 'security');
+  assert.match(baseline.findings[0].sha256, /^[a-f0-9]{64}$/);
 });
 
 test('agent report flags sensitive execution surface changes', () => {
