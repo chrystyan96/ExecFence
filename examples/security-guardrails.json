@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails.schema.json",
+  "policyPack": "baseline",
+  "mode": "block",
+  "blockSeverities": ["critical", "high"],
+  "warnSeverities": ["medium", "low"],
+  "roots": ["backend-go", "backend", "frontend", "desktop", "packages", "scripts", ".github", ".vscode"],
+  "ignoreDirs": ["custom-generated-output"],
+  "skipFiles": [],
+  "allowExecutables": [
+    {
+      "path": "tools/reviewed-helper.exe",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": "Reviewed build helper pinned by hash."
+    }
+  ],
+  "extraSignatures": ["project-specific-bad-marker"],
+  "extraRegexSignatures": ["project-bad-[0-9]+"],
+  "signaturesFile": ".security-guardrails.signatures.json",
+  "baselineFile": ".security-guardrails.baseline.json",
+  "workflowHardening": true,
+  "archiveAudit": true,
+  "auditAllPackageScripts": false
+}

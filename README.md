@@ -88,6 +88,26 @@ security-guardrails publish [--real]
 security-guardrails print-agents-snippet
 ```
 
+## Files, Logs, and Configuration
+
+`security-guardrails` does not keep a global log or background daemon. Normal command output goes to the terminal or CI log. Durable evidence is written only when the user requests a report.
+
+Project-level files:
+
+| File or directory | Created by | Purpose |
+| --- | --- | --- |
+| `.security-guardrails.json` | `init` | Main project policy: mode, severities, roots, policy pack, allowlists, custom signatures, and feature toggles. |
+| `.security-guardrails.signatures.json` | user/team | Optional project IoCs and regex detections. The path is configurable with `signaturesFile`. |
+| `.security-guardrails.baseline.json` | user/team | Optional reviewed exceptions for existing findings. The path is configurable with `baselineFile`. |
+| `security-guardrails-report/report.json` | `scan --report` or `report` | Machine-readable evidence bundle with findings, hashes, snippets, git blame, recent commits, command, and config path. |
+| `security-guardrails-report/report.md` | `scan --report` or `report` | Human-readable incident or CI evidence summary. |
+| `.git/hooks/pre-commit` | `install-hooks` | Local pre-commit scan hook. |
+| agent instruction files | `install-agent-rules` / `install-skill` | Portable instructions for Codex, Claude, Gemini, Cursor, Copilot, Continue, Windsurf, Aider, Roo, and Cline. |
+
+The default report directory is `security-guardrails-report` under the project root and is ignored by future scans. If you use a custom report directory inside the repository, add that directory name to `ignoreDirs`.
+
+Copyable examples are available in `examples/`. JSON schemas are published under `schema/` for the main config, external signatures, and reviewed baseline files.
+
 ## Configuration
 
 `init` creates `.security-guardrails.json` when one does not exist:
@@ -113,6 +133,26 @@ security-guardrails print-agents-snippet
 }
 ```
 
+Configurable fields:
+
+| Field | What it controls |
+| --- | --- |
+| `policyPack` | Enables stack-aware defaults: `baseline`, `web`, `desktop`, `node`, `go`, `python`, `rust`, `agentic`, or `strict`. |
+| `mode` | `block` fails the command for blocked severities; `audit` reports without failing. |
+| `blockSeverities` | Severities that fail in block mode. Defaults to `critical` and `high`. |
+| `warnSeverities` | Severities shown as warnings when not blocked. Defaults to `medium` and `low`. |
+| `roots` | Directories/files to scan when no explicit paths are passed. |
+| `ignoreDirs` | Directory names to skip recursively, useful for custom generated output folders. |
+| `skipFiles` | Exact file names to skip. Use narrowly for generated files that cannot be moved. |
+| `allowExecutables` | Reviewed executable artifacts allowed in source/build-input folders, preferably pinned by SHA-256. |
+| `extraSignatures` | Literal project-specific IoCs. |
+| `extraRegexSignatures` | Reviewed regex detections for project-specific patterns. |
+| `signaturesFile` | Path to an external signatures JSON file. |
+| `baselineFile` | Path to a reviewed baseline/exceptions JSON file. |
+| `workflowHardening` | Enables/disables GitHub Actions hardening checks. |
+| `archiveAudit` | Enables/disables source-tree archive checks for `.zip`, `.tar`, `.tgz`, and `.asar`. |
+| `auditAllPackageScripts` | Audits all package scripts instead of only install/prepare lifecycle scripts. |
+
 Use `allowExecutables` sparingly for reviewed binaries that are intentionally committed.
 Prefer `{ "path": "...", "sha256": "..." }` entries so a reviewed binary cannot be silently replaced.
 Use `extraSignatures` for literal project-specific IoCs and `extraRegexSignatures` for reviewed regex detections.
@@ -121,6 +161,7 @@ For larger teams, keep project-specific detections in `.security-guardrails.sign
 
 ```json
 {
+  "$schema": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails-signatures.schema.json",
   "exact": [{ "id": "team-ioc", "value": "bad-domain.example" }],
   "regex": [{ "id": "team-wallet-marker", "pattern": "wallet-[0-9]+" }]
 }
@@ -134,6 +175,7 @@ Use `.security-guardrails.baseline.json` to suppress reviewed existing findings 
 
 ```json
 {
+  "$schema": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails-baseline.schema.json",
   "findings": [
     {
       "findingId": "suspicious-package-script",

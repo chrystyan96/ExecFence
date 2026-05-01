@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails-baseline.schema.json",
+  "findings": [
+    {
+      "findingId": "suspicious-package-script",
+      "file": "package.json",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": "Reviewed legacy install hook. Remove before the expiry date.",
+      "owner": "security",
+      "expiresAt": "2026-12-31"
+    }
+  ]
+}

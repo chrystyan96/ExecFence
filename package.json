@@ -10,6 +10,7 @@
   },
   "files": [
     "bin/",
+    "examples/",
     "lib/",
     "schema/",
     "skill/",

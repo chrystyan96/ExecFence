@@ -2,26 +2,52 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails.schema.json",
   "title": "security-guardrails configuration",
+  "description": "Project-level policy for security-guardrails scans, reports, baseline exceptions, and stack-aware guardrail behavior.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "$schema": { "type": "string" },
-    "policyPack": { "enum": ["baseline", "web", "desktop", "node", "go", "python", "rust", "agentic", "strict"] },
-    "mode": { "enum": ["block", "audit"] },
+    "policyPack": {
+      "description": "Stack-aware default policy to apply before explicit config overrides.",
+      "enum": ["baseline", "web", "desktop", "node", "go", "python", "rust", "agentic", "strict"],
+      "default": "baseline"
+    },
+    "mode": {
+      "description": "Whether blocking findings fail the command or are reported only.",
+      "enum": ["block", "audit"],
+      "default": "block"
+    },
     "blockSeverities": {
+      "description": "Finding severities that fail in block mode.",
       "type": "array",
       "items": { "enum": ["critical", "high", "medium", "low"] },
-      "uniqueItems": true
+      "uniqueItems": true,
+      "default": ["critical", "high"]
     },
     "warnSeverities": {
+      "description": "Finding severities reported as warnings when not blocked.",
       "type": "array",
       "items": { "enum": ["critical", "high", "medium", "low"] },
-      "uniqueItems": true
+      "uniqueItems": true,
+      "default": ["medium", "low"]
     },
-    "roots": { "type": "array", "items": { "type": "string" } },
-    "ignoreDirs": { "type": "array", "items": { "type": "string" } },
-    "skipFiles": { "type": "array", "items": { "type": "string" } },
+    "roots": {
+      "description": "Files or directories scanned when no explicit paths are passed.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "ignoreDirs": {
+      "description": "Directory names skipped recursively.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "skipFiles": {
+      "description": "Exact file names skipped by the scanner.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
     "allowExecutables": {
+      "description": "Reviewed executable artifacts allowed in source/build-input folders. Prefer hash-pinned object entries.",
       "type": "array",
       "items": {
         "oneOf": [
@@ -39,12 +65,40 @@
         ]
       }
     },
-    "extraSignatures": { "type": "array", "items": { "type": "string" } },
-    "extraRegexSignatures": { "type": "array", "items": { "type": "string" } },
-    "signaturesFile": { "type": "string" },
-    "baselineFile": { "type": "string" },
-    "workflowHardening": { "type": "boolean" },
-    "archiveAudit": { "type": "boolean" },
-    "auditAllPackageScripts": { "type": "boolean" }
+    "extraSignatures": {
+      "description": "Literal project-specific indicators to search for.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "extraRegexSignatures": {
+      "description": "JavaScript regular expression source strings for project-specific detections.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "signaturesFile": {
+      "description": "Path to a project/team external signatures JSON file.",
+      "type": "string",
+      "default": ".security-guardrails.signatures.json"
+    },
+    "baselineFile": {
+      "description": "Path to a reviewed baseline/exceptions JSON file.",
+      "type": "string",
+      "default": ".security-guardrails.baseline.json"
+    },
+    "workflowHardening": {
+      "description": "Enable GitHub Actions hardening checks.",
+      "type": "boolean",
+      "default": true
+    },
+    "archiveAudit": {
+      "description": "Report committed archives such as .zip, .tar, .tgz, and .asar in source/build-input folders.",
+      "type": "boolean",
+      "default": true
+    },
+    "auditAllPackageScripts": {
+      "description": "Audit all package.json scripts instead of only install/prepare lifecycle scripts.",
+      "type": "boolean",
+      "default": false
+    }
   }
 }
