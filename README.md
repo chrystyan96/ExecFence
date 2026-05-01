@@ -42,6 +42,24 @@ Run ExecFence without a global install:
 npx --yes execfence scan
 ```
 
+Recommended automatic project setup:
+
+```sh
+npx --yes execfence guard enable
+npx --yes execfence guard enable --apply
+npx --yes execfence guard status
+```
+
+`guard enable` is a dry-run by default. It plans project config, wrappers for scripts/workflows/tasks, CI checks, local agent rules, and coverage status. Use `--apply` to write those project-local changes.
+
+Rollback generated wrappers and marked project agent rules:
+
+```sh
+npx --yes execfence guard disable
+```
+
+`guard disable` preserves reports, config, baselines, signatures, trust stores, cache, and quarantine metadata.
+
 Gate a command before it runs:
 
 ```sh
@@ -95,6 +113,15 @@ npx --yes execfence run --sandbox -- npm test
 ```
 
 If the requested enforcement capability is unavailable, ExecFence should block before execution and explain what is missing. It does not silently downgrade enforcement.
+
+Experimental non-invasive global setup:
+
+```sh
+npx --yes execfence guard global-status
+npx --yes execfence guard global-enable
+```
+
+Global guard mode installs skill/defaults and global agent rules only. It does not alter PATH, aliases, shims, shell profiles, or intercept `npm`, `go`, `python`, `cargo`, or `make`.
 
 ## Use The Skill
 
@@ -202,6 +229,10 @@ Baselines are meant for reviewed exceptions, not for forcing a build through unk
 | `execfence coverage` | Detect unprotected build/dev/test entrypoints |
 | `execfence wire --dry-run` | Show wrapper changes without writing |
 | `execfence wire --apply` | Apply wrappers where supported |
+| `execfence guard enable` | Show automatic project guardrail plan without writing |
+| `execfence guard enable --apply` | Apply project guardrails, wrappers, CI setup, and local agent rules |
+| `execfence guard disable` | Remove generated wrappers/rules while preserving evidence |
+| `execfence guard global-enable` | Install global skill and agent rules without shell interception |
 | `execfence manifest` | Generate execution-entrypoint manifest |
 | `execfence manifest diff` | Detect new or changed execution entrypoints |
 | `execfence deps diff` | Compare dependency/lockfile risk |

@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.1.0 - 2026-05-01
+
+- Added `execfence guard status|plan|enable|disable|global-status|global-enable` for dry-run-first automatic project guardrail setup.
+- Added project guard mode orchestration for init, coverage, wiring, local agent rules, CI status, and conservative rollback.
+- Expanded wiring and coverage for npm lifecycle scripts, pack/publish scripts, Makefile pack/publish targets, and common CI commands for Node, Go, Python, Rust, and Make.
+- Documented the recommended automatic setup path and the non-invasive global mode that installs only skill/defaults and agent rules.
+
 ## v3.0.0 - 2026-05-01
 
 - Added sandbox policy layout with `.execfence/config/sandbox.json`, `execfence sandbox init|doctor|plan|explain`, helper metadata auditing, and deterministic capability reports.
