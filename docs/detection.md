@@ -1,0 +1,180 @@
+# ExecFence Detection Model
+
+This page is the technical companion to the main article. It explains what the scanner inspects and how the detection layers are intended to work.
+
+ExecFence is built around execution surfaces. It prioritizes files and metadata that can cause code to run during:
+
+- dependency install
+- build
+- test
+- local dev
+- IDE task execution
+- CI
+- packaging and publishing
+- agent/MCP tool use
+
+It is not a general-purpose code linter. The scanner is tuned for suspicious execution paths.
+
+## What The Scanner Inspects
+
+ExecFence inspects:
+
+- JavaScript/TypeScript executable configs
+- package scripts and lifecycle hooks
+- npm/pnpm/yarn/bun lockfiles
+- Cargo, Go, Poetry, and uv lockfiles
+- GitHub Actions workflows
+- `.vscode/tasks.json`
+- Makefiles
+- Tauri/Electron/VS Code extension surfaces
+- committed executable and archive artifacts
+- MCP and agent instruction/config files
+- project-specific signatures in `.execfence/config/signatures.json`
+- reviewed baseline exceptions in `.execfence/config/baseline.json`
+
+It skips normal generated or dependency directories such as `.git`, `node_modules`, `dist`, `build`, `coverage`, `target`, caches, and test output by default.
+
+## Rule Layers
+
+### Exact IoC Matching
+
+Known suspicious markers are detected as literal indicators. This is intentionally simple: exact matching is fast, deterministic, and explainable.
+
+Use this layer for stable indicators such as known loader markers, suspicious endpoint strings, or campaign-specific strings that should never appear in normal project code.
+
+### Regex Signatures
+
+Regex rules catch families of suspicious code that do not have a single stable string.
+
+Teams can add project-owned signatures in:
+
+```text
+.execfence/config/signatures.json
+```
+
+This keeps project-specific IoCs out of scanner source code and makes them reviewable with the rest of the project policy.
+
+### Suspicious Loader Heuristics
+
+ExecFence looks for JavaScript patterns that are unusual in normal config files but common in loader-style malware:
+
+- global object assignment to dynamic Node module loading
+- dynamic `Function` or constructor loaders
+- `eval` combined with encoded or generated strings
+- `fromCharCode` or base64-like decode paths used with dynamic execution
+- `child_process` usage in executable project config
+- very long obfuscated lines combined with loader markers
+
+The scanner does not flag every minified file. It focuses on executable project surfaces where obfuscated loader behavior is higher risk.
+
+### Lifecycle Script Audit
+
+Package scripts are treated differently depending on whether they execute automatically. Install-time hooks such as `preinstall`, `install`, `postinstall`, and `prepare` are high-value attacker surfaces because package managers can run them during dependency installation or publication workflows.
+
+ExecFence looks for risky behavior such as:
+
+- shell downloads
+- pipe-to-shell
+- hidden PowerShell
+- `curl` or `wget` execution chains
+- eval-style execution
+- suspicious binary launch paths
+- install hooks in local packages/workspaces
+
+### Lockfile Source Audit
+
+Lockfiles are inspected for suspicious sources:
+
+- raw GitHub URLs
+- gist URLs
+- paste hosts
+- non-HTTPS package sources
+- registry drift
+- unexpected package source changes
+- lifecycle/bin entries in newly introduced packages
+
+The goal is not to replace dependency vulnerability scanning. It is to catch dependency source changes that may cause code execution during install/build/test.
+
+### Executable And Archive Artifacts
+
+ExecFence flags unexpected binaries and archives in source/build-input folders:
+
+- `.exe`
+- `.dll`
+- `.bat`
+- `.cmd`
+- `.scr`
+- `.vbs`
+- `.wsf`
+- `.zip`
+- `.tar`
+- `.tgz`
+- `.asar`
+- platform shared libraries and other executable-like artifacts
+
+Reviewed artifacts should be pinned by SHA-256 through config or trust stores, with a reason and owner.
+
+### Workflow Hardening
+
+GitHub Actions workflows are audited for patterns that can turn untrusted repository code into credentialed execution:
+
+- broad write permissions
+- risky triggers
+- unpinned actions
+- pipe-to-shell
+- publish workflows without provenance
+- secrets exposed to untrusted PR contexts
+
+### Agent And MCP Surface Audit
+
+ExecFence treats agents as execution surfaces. MCP/tool manifests and agent instructions can expose powerful capabilities that are equivalent to local code execution.
+
+The scanner and `agent-report` watch for:
+
+- broad shell/process access
+- broad filesystem access
+- browser/network/credential access
+- MCP configs added or changed in a diff
+- agent instructions that tell tools to skip, disable, ignore, or bypass ExecFence/security checks
+
+This is useful because agents can execute commands faster than a human can review each one.
+
+## Baselines And Exceptions
+
+Reviewed exceptions live in:
+
+```text
+.execfence/config/baseline.json
+```
+
+A good exception includes:
+
+- `findingId`
+- `file`
+- `sha256`
+- `reason`
+- `owner`
+- `expiresAt`
+
+Use baselines for reviewed legacy findings. Do not baseline new `critical` or `high` findings only to make a build pass.
+
+## Reports
+
+Findings are written to timestamped JSON reports under:
+
+```text
+.execfence/reports/
+```
+
+Reports include severity, rule id, file, line, snippet, SHA-256, git evidence, remediation, local analysis, and runtime/sandbox evidence when available.
+
+## Design Boundary
+
+ExecFence is intentionally conservative about what it claims:
+
+- It can block known suspicious patterns before execution.
+- It can detect risky execution surfaces.
+- It can preserve evidence when a command blocks.
+- It can make agents prefer safer command execution.
+
+It cannot prove arbitrary code is safe, replace EDR/AV, or provide hard sandbox isolation without platform/helper support.

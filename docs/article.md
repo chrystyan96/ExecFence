@@ -17,6 +17,8 @@ Before going deeper, it is important to separate two installation surfaces:
 
 In short: npm runs the guardrail; the skill teaches the agent to use the guardrail.
 
+The ExecFence skill is also proposed for the OpenAI Skills catalog in [openai/skills#385](https://github.com/openai/skills/pull/385), which gives the project an external integration path beyond the npm package.
+
 ExecFence exists because malicious code does not need to look like an obvious executable. It can hide in package hooks, build configs, IDE tasks, lockfiles, CI workflows, or agent tool manifests. The dangerous moment is often mundane: a developer runs test/build/dev, opens a folder in an IDE, installs dependencies, or lets an agent run the project.
 
 ## Quick Start
@@ -283,95 +285,11 @@ It skips normal generated or dependency directories such as `.git`, `node_module
 
 ## How Detection Works
 
-ExecFence combines several low-noise rule types.
+ExecFence combines exact IoC matching, project/team regex signatures, suspicious loader heuristics, lifecycle-script audit, lockfile source review, executable/archive detection, workflow hardening checks, and agent/MCP surface audit.
 
-### Exact IoC Matching
+The important design choice is scope: rules are weighted toward files that execute during development, build, test, CI, package, publish, IDE, or agent workflows. ExecFence is not trying to lint every source file; it is trying to catch suspicious code where a normal command can activate it.
 
-Known suspicious markers are detected as literal indicators. Examples include injected JavaScript loader markers and suspicious blockchain/RPC endpoints associated with known malicious repository payloads.
-
-This is intentionally simple: exact matching is fast, deterministic, and explainable.
-
-### Regex Signatures
-
-Regex rules catch families of suspicious code that do not have a single stable string. Project teams can add their own regexes in:
-
-```text
-.execfence/config/signatures.json
-```
-
-Use this for team-specific IoCs instead of editing scanner code.
-
-### Suspicious Loader Heuristics
-
-ExecFence looks for JavaScript patterns that are unusual in normal config files but common in loader-style malware:
-
-- global object assignment to dynamic Node module loading
-- dynamic `Function` or constructor loaders
-- `eval` combined with encoded or generated strings
-- `fromCharCode` or base64-like decode paths used with dynamic execution
-- `child_process` usage in executable project config
-- very long obfuscated lines combined with loader markers
-
-The scanner does not flag every minified file. It focuses on executable project surfaces where obfuscated loader behavior is higher risk.
-
-### Lifecycle Script Audit
-
-Package scripts are treated differently depending on whether they execute automatically. Install-time hooks such as `preinstall`, `install`, `postinstall`, and `prepare` are high-value attacker surfaces because package managers can run them during dependency installation or publication workflows.
-
-ExecFence looks for risky behavior such as:
-
-- shell downloads
-- pipe-to-shell
-- hidden PowerShell
-- `curl` or `wget` execution chains
-- eval-style execution
-- suspicious binary launch paths
-- install hooks in local packages/workspaces
-
-### Lockfile Source Audit
-
-Lockfiles are inspected for suspicious sources:
-
-- raw GitHub URLs
-- gist URLs
-- paste hosts
-- non-HTTPS package sources
-- registry drift
-- unexpected package source changes
-- lifecycle/bin entries in newly introduced packages
-
-The goal is not to replace dependency vulnerability scanning. It is to catch dependency source changes that may cause code execution during install/build/test.
-
-### Executable And Archive Artifacts
-
-ExecFence flags unexpected binaries and archives in source/build-input folders:
-
-- `.exe`
-- `.dll`
-- `.bat`
-- `.cmd`
-- `.scr`
-- `.vbs`
-- `.wsf`
-- `.zip`
-- `.tar`
-- `.tgz`
-- `.asar`
-- platform shared libraries and other executable-like artifacts
-
-Reviewed artifacts should be pinned by SHA-256 through config or trust stores, with a reason and owner.
-
-### Workflow And Agent Surface Audit
-
-ExecFence treats CI and agents as execution surfaces. It audits:
-
-- GitHub Actions permissions and risky triggers
-- unpinned actions
-- `curl | bash`
-- publish workflows without provenance
-- agent instruction files
-- MCP/tool configs with broad shell, filesystem, browser, credential, or network access
-- instructions attempting to skip or disable ExecFence/security checks
+For the full technical detection breakdown, see [Detection Model](./detection).
 
 ## Mapping To Real Attack Patterns
 
@@ -650,32 +568,6 @@ npx --yes execfence sandbox doctor
 npx --yes execfence sandbox plan -- npm test
 npx --yes execfence run --sandbox-mode audit -- npm test
 ```
-
-## Using The Skill
-
-ExecFence also ships as a skill for coding agents.
-
-Install:
-
-```sh
-npx --yes execfence install-skill
-```
-
-Install project-local agent rules:
-
-```sh
-npx --yes execfence install-agent-rules --scope project
-npx --yes execfence install-agent-rules --verify --scope project
-```
-
-When active, the skill should make the agent:
-
-1. Detect the stack and execution surfaces.
-2. Prefer `execfence init --preset auto`.
-3. Prefer `execfence run -- <command>` for dev/build/test commands.
-4. Use `execfence run --sandbox-mode audit -- <command>` for higher-risk local execution.
-5. Avoid ignoring `critical` or `high` findings unless a reviewed, unexpired baseline exists.
-6. Use reports, manifest, coverage, dependency diff, pack audit, trust audit, and incident bundles when investigating a block.
 
 ## Design Principles
 
