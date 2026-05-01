@@ -1,0 +1,46 @@
+{
+  "name": "security-guardrails",
+  "version": "0.1.0",
+  "description": "Stack-aware malware and supply-chain guardrails for persistent web, desktop, backend, and local-agent projects.",
+  "license": "MIT",
+  "author": "Chrystyan Byrnes",
+  "type": "commonjs",
+  "bin": {
+    "security-guardrails": "bin/security-guardrails.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "skill/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "scan": "node bin/security-guardrails.js scan .",
+    "check": "npm test && npm run scan",
+    "pack:dry": "npm pack --dry-run"
+  },
+  "keywords": [
+    "security",
+    "supply-chain",
+    "malware",
+    "guardrails",
+    "codex",
+    "npx",
+    "tauri",
+    "node",
+    "go"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TwinSparkGames/security-guardrails.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TwinSparkGames/security-guardrails/issues"
+  },
+  "homepage": "https://github.com/TwinSparkGames/security-guardrails#readme"
+}
