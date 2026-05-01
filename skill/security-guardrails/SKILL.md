@@ -67,6 +67,15 @@ Block suspicious execution patterns:
 
 Prefer a project `.security-guardrails.json` for policy packs, reviewed exceptions, extra literal IoCs, extra regex detections, and audit/block mode instead of weakening the scanner code. When allowing a committed executable, use a `{ "path": "...", "sha256": "..." }` entry. Put team-specific IoCs in `.security-guardrails.signatures.json` and reviewed legacy findings in `.security-guardrails.baseline.json` with an owner, reason, expiry, and hash.
 
+## User Configuration Surface
+
+Create project configuration in the repository root unless the project has a stronger local convention:
+- `.security-guardrails.json`: main config for `policyPack`, `mode`, `blockSeverities`, `warnSeverities`, scan `roots`, `ignoreDirs`, `skipFiles`, `allowExecutables`, `extraSignatures`, `extraRegexSignatures`, `signaturesFile`, `baselineFile`, `workflowHardening`, `archiveAudit`, and `auditAllPackageScripts`.
+- `.security-guardrails.signatures.json`: optional team-owned literal and regex indicators. Use this for new IoCs instead of editing scanner code.
+- `.security-guardrails.baseline.json`: optional reviewed exceptions for existing findings. Require `findingId`, `file`, `reason`, `owner`, `expiresAt`, and preferably `sha256`.
+
+Evidence is created only when requested. `scan --report <dir>` and `report --dir <dir>` write `<dir>/report.json` and `<dir>/report.md`; the default directory is `security-guardrails-report`. Do not delete or rewrite suspicious payloads automatically. Quarantine by preserving evidence in the report bundle and let the user decide cleanup/remediation.
+
 ## Preferred CLI
 
 When the package is available, prefer:

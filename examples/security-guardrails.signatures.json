@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails-signatures.schema.json",
+  "exact": [
+    {
+      "id": "team-ioc",
+      "value": "bad-domain.example",
+      "reason": "Known internal incident indicator."
+    }
+  ],
+  "regex": [
+    {
+      "id": "team-wallet-marker",
+      "pattern": "wallet-[0-9]+",
+      "reason": "Suspicious project-specific wallet marker."
+    }
+  ]
+}
