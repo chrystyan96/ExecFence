@@ -6,8 +6,14 @@
   "additionalProperties": false,
   "properties": {
     "$schema": { "type": "string" },
+    "policyPack": { "enum": ["baseline", "web", "desktop", "node", "go", "python", "rust", "agentic", "strict"] },
     "mode": { "enum": ["block", "audit"] },
     "blockSeverities": {
+      "type": "array",
+      "items": { "enum": ["critical", "high", "medium", "low"] },
+      "uniqueItems": true
+    },
+    "warnSeverities": {
       "type": "array",
       "items": { "enum": ["critical", "high", "medium", "low"] },
       "uniqueItems": true
@@ -36,6 +42,9 @@
     "extraSignatures": { "type": "array", "items": { "type": "string" } },
     "extraRegexSignatures": { "type": "array", "items": { "type": "string" } },
     "signaturesFile": { "type": "string" },
+    "baselineFile": { "type": "string" },
+    "workflowHardening": { "type": "boolean" },
+    "archiveAudit": { "type": "boolean" },
     "auditAllPackageScripts": { "type": "boolean" }
   }
 }

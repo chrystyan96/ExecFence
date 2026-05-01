@@ -72,15 +72,18 @@ The scanner ignores normal dependency/build/cache folders:
 
 ```sh
 security-guardrails scan [paths...]
-security-guardrails scan [--mode block|audit] --ci [--format text|json|sarif] [paths...]
+security-guardrails scan [--mode block|audit] [--fail-on critical,high] [--changed-only] [--full-ioc-scan] [--report <dir>] --ci [--format text|json|sarif] [paths...]
 security-guardrails diff-scan [--staged] [--mode block|audit]
 security-guardrails scan-history [--max-commits <n>] [--format text|json|sarif] [--include-self]
+security-guardrails coverage [--format text|json]
+security-guardrails report [--dir <dir>] [paths...]
+security-guardrails doctor
 security-guardrails explain <finding-id>
-security-guardrails init [--preset auto|node|go|tauri|python|rust]
+security-guardrails init [--preset auto|node|go|tauri|python|rust] [--dry-run]
 security-guardrails detect
 security-guardrails install-hooks
 security-guardrails install-skill [--codex-home <path>] [--home <path>]
-security-guardrails install-agent-rules [--scope global|project|both] [--home <path>] [--project <path>]
+security-guardrails install-agent-rules [--scope global|project|both] [--verify] [--home <path>] [--project <path>]
 security-guardrails publish [--real]
 security-guardrails print-agents-snippet
 ```
@@ -92,8 +95,10 @@ security-guardrails print-agents-snippet
 ```json
 {
   "$schema": "https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails.schema.json",
+  "policyPack": "baseline",
   "mode": "block",
   "blockSeverities": ["critical", "high"],
+  "warnSeverities": ["medium", "low"],
   "roots": ["backend-go", "backend", "frontend", "desktop", "packages", "scripts", ".github", ".vscode"],
   "ignoreDirs": [],
   "skipFiles": [],
@@ -103,6 +108,7 @@ security-guardrails print-agents-snippet
   "extraSignatures": [],
   "extraRegexSignatures": [],
   "signaturesFile": ".security-guardrails.signatures.json",
+  "baselineFile": ".security-guardrails.baseline.json",
   "auditAllPackageScripts": false
 }
 ```
@@ -121,6 +127,25 @@ For larger teams, keep project-specific detections in `.security-guardrails.sign
 ```
 
 `mode: "audit"` reports findings without failing the command. `mode: "block"` fails only for configured `blockSeverities`, which default to `critical` and `high`.
+
+Policy packs are available for `baseline`, `web`, `desktop`, `node`, `go`, `python`, `rust`, `agentic`, and `strict`.
+
+Use `.security-guardrails.baseline.json` to suppress reviewed existing findings without weakening future detections:
+
+```json
+{
+  "findings": [
+    {
+      "findingId": "suspicious-package-script",
+      "file": "package.json",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": "reviewed legacy install hook",
+      "owner": "security",
+      "expiresAt": "2026-12-31"
+    }
+  ]
+}
+```
 
 ## Presets
 
@@ -142,7 +167,7 @@ npx --yes security-guardrails scan --ci --format json
 npx --yes security-guardrails scan --ci --format sarif > security-guardrails.sarif
 ```
 
-The repository includes `.github/workflows/ci.yml`, which runs tests, scan, SARIF generation, and package dry-run on Ubuntu, Windows, and macOS.
+The repository includes `.github/workflows/ci.yml`, which runs tests, scan, SARIF generation, and package dry-run on Ubuntu, Windows, and macOS. `.github/workflows/scorecard.yml` runs OpenSSF Scorecard as an optional repository-health signal.
 
 ## Git Workflows
 
@@ -173,6 +198,25 @@ Explain a finding:
 npx --yes security-guardrails explain suspicious-package-script
 ```
 
+Check whether build/dev/test entrypoints are protected:
+
+```sh
+npx --yes security-guardrails coverage
+```
+
+Generate an evidence bundle without deleting suspicious files:
+
+```sh
+npx --yes security-guardrails scan --report security-guardrails-report
+npx --yes security-guardrails report --dir security-guardrails-report
+```
+
+Verify the scanner blocks a temporary known-bad fixture in the current environment:
+
+```sh
+npx --yes security-guardrails doctor
+```
+
 `install-skill` writes:
 
 - `<codex-home>/skills/security-guardrails/SKILL.md`
@@ -195,6 +239,7 @@ npx --yes security-guardrails explain suspicious-package-script
 - `.clinerules`
 
 `install-agent-rules --scope both` writes both global and project-level rules.
+`install-agent-rules --verify --scope both` checks whether those rule files exist and contain a guardrails instruction.
 
 ## Publishing
 

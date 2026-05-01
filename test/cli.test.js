@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
-const { installSkill, updateGlobalAgents } = require('../lib/cli');
+const { installSkill, main, updateGlobalAgents } = require('../lib/cli');
 const { explainFinding } = require('../lib/explain');
 const {
   installAgentRules,
@@ -89,4 +89,22 @@ test('explainFinding describes known finding ids', () => {
 
   assert.match(output, /Severity: high/);
   assert.match(output, /Lifecycle scripts/);
+});
+
+test('install-agent-rules verify reports missing project rules', async () => {
+  const project = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-verify-'));
+  const originalCwd = process.cwd();
+  const originalExitCode = process.exitCode;
+  const originalLog = console.log;
+  process.chdir(project);
+  process.exitCode = 0;
+  console.log = () => {};
+  try {
+    await main(['install-agent-rules', '--verify', '--scope', 'project']);
+    assert.equal(process.exitCode, 1);
+  } finally {
+    console.log = originalLog;
+    process.chdir(originalCwd);
+    process.exitCode = originalExitCode;
+  }
 });

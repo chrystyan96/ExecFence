@@ -30,12 +30,16 @@ Prefer these commands when available:
 npx --yes security-guardrails init --preset auto
 npx --yes security-guardrails scan --ci --format json
 npx --yes security-guardrails scan --mode audit --ci --format json
+npx --yes security-guardrails scan --fail-on critical,high --report security-guardrails-report
 npx --yes security-guardrails scan --ci --format sarif
 npx --yes security-guardrails diff-scan --staged
+npx --yes security-guardrails coverage
 npx --yes security-guardrails scan-history --max-commits 1000
+npx --yes security-guardrails doctor
 npx --yes security-guardrails explain suspicious-package-script
 npx --yes security-guardrails install-hooks
 npx --yes security-guardrails install-agent-rules --scope project
+npx --yes security-guardrails install-agent-rules --verify --scope project
 ```
 
 ## Minimum Detections
@@ -61,7 +65,7 @@ Block suspicious execution patterns:
 - executable artifacts such as `.exe`, `.dll`, `.bat`, `.cmd`, `.scr`, `.vbs`, `.wsf` inside source/build-input folders
 - suspicious npm lifecycle scripts and insecure or suspicious npm/pnpm/yarn/bun/Cargo/Go/Python lockfile URLs
 
-Prefer a project `.security-guardrails.json` for reviewed exceptions, extra literal IoCs, extra regex detections, and audit/block mode instead of weakening the scanner code. When allowing a committed executable, use a `{ "path": "...", "sha256": "..." }` entry. Put team-specific IoCs in `.security-guardrails.signatures.json`.
+Prefer a project `.security-guardrails.json` for policy packs, reviewed exceptions, extra literal IoCs, extra regex detections, and audit/block mode instead of weakening the scanner code. When allowing a committed executable, use a `{ "path": "...", "sha256": "..." }` entry. Put team-specific IoCs in `.security-guardrails.signatures.json` and reviewed legacy findings in `.security-guardrails.baseline.json` with an owner, reason, expiry, and hash.
 
 ## Preferred CLI
 
