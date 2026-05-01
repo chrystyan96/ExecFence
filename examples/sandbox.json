@@ -1,0 +1,26 @@
+{
+  "$schema": "https://raw.githubusercontent.com/chrystyan96/execfence/master/schema/execfence-sandbox.schema.json",
+  "mode": "audit",
+  "profile": "test",
+  "allowDegraded": false,
+  "fs": {
+    "readAllow": ["."],
+    "writeAllow": [".", ".execfence/reports", ".execfence/cache", "coverage", "tmp", "temp"],
+    "deny": [".git", ".ssh", ".env", ".env.local"],
+    "denyNewExecutable": true
+  },
+  "process": {
+    "allow": [],
+    "deny": ["curl", "wget", "powershell -enc", "Invoke-WebRequest", "bash -c", "sh -c", "cmd /c"],
+    "superviseChildren": true
+  },
+  "network": {
+    "default": "deny",
+    "allow": ["localhost", "127.0.0.1", "::1"],
+    "auditOnly": false
+  },
+  "helper": {
+    "path": ".execfence/helper/execfence-helper.json",
+    "requiredForEnforce": true
+  }
+}

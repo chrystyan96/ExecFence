@@ -85,6 +85,11 @@
       "type": "string",
       "default": ".execfence/config/baseline.json"
     },
+    "sandboxFile": {
+      "description": "Path to the sandbox policy JSON file used by execfence run --sandbox and sandbox commands.",
+      "type": "string",
+      "default": ".execfence/config/sandbox.json"
+    },
     "reportsDir": {
       "description": "Directory for automatic JSON evidence reports.",
       "type": "string",

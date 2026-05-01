@@ -30,6 +30,10 @@ Prefer these commands when available:
 npx --yes execfence init --preset auto
 npx --yes execfence run -- npm test
 npx --yes execfence run -- npm run build
+npx --yes execfence run --sandbox-mode audit -- npm test
+npx --yes execfence run --sandbox -- npm test
+npx --yes execfence sandbox doctor
+npx --yes execfence sandbox plan -- npm test
 npx --yes execfence run --record-artifacts --deny-on-new-executable -- npm test
 npx --yes execfence ci
 npx --yes execfence adopt
@@ -96,11 +100,13 @@ Create project configuration through `execfence init`:
 - `.execfence/config/execfence.json`: main config for `policyPack`, `mode`, `blockSeverities`, `warnSeverities`, scan `roots`, `ignoreDirs`, `skipFiles`, `allowExecutables`, `extraSignatures`, `extraRegexSignatures`, `signaturesFile`, `baselineFile`, `reportsDir`, `reportsGitignore`, `runtimeTrace`, `analysis.webEnrichment`, `manifest.blockNewEntrypoints`, `ci`, `wire`, `deps`, `adopt`, `policy`, `trustStore`, `reportRetention`, `reports.retention`, `htmlReport`, `redaction`, `workflowHardening`, `archiveAudit`, and `auditAllPackageScripts`.
 - `.execfence/config/signatures.json`: optional team-owned literal and regex indicators. Use this for new IoCs instead of editing scanner code.
 - `.execfence/config/baseline.json`: optional reviewed exceptions for existing findings. Require `findingId`, `file`, `reason`, `owner`, `expiresAt`, and preferably `sha256`.
+- `.execfence/config/sandbox.json`: sandbox policy for `execfence run --sandbox`, including `mode`, `profile`, filesystem, process, network, and helper settings. Audit mode is safe without a helper; enforce mode must block if enforcement is unavailable unless the user explicitly uses `--allow-degraded`.
 - `.execfence/config/policies/*.json`: optional project/team policy packs selected by `policyPack`.
 - `.execfence/reports/`: automatic JSON reports. Keep it gitignored unless the user sets `reportsGitignore: false`.
 - `.execfence/manifest.json`: generated execution-surface manifest for package scripts, Makefiles, workflows, tasks, hooks, language build files, and agent rules.
 - `.execfence/cache/enrichment/`: local cache for public-source enrichment of critical/high findings.
 - `.execfence/trust/*.json`: trust stores for reviewed files, actions, registries, package scopes, and package sources.
+- `.execfence/helper/execfence-helper.json`: optional helper metadata. Validate with `execfence helper audit`; do not trust helpers without hash/provenance metadata.
 - `.execfence/quarantine/<report-id>/metadata.json`: quarantine metadata only; do not delete payloads automatically.
 - `<home>/.agents/skills/execfence/defaults.json`: read-only global defaults installed with the skill. Do not ask the user to edit it; project config wins.
 

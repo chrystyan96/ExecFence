@@ -10,6 +10,7 @@ Run the runtime gate or a scan without installing:
 
 ```sh
 npx --yes execfence run -- npm test
+npx --yes execfence run --sandbox-mode audit -- npm test
 npx --yes execfence scan
 npx --yes execfence scan --mode audit
 ```
@@ -72,7 +73,7 @@ The scanner ignores normal dependency/build/cache folders:
 ## Commands
 
 ```sh
-execfence run [--record-artifacts] [--deny-on-new-executable] -- <command>
+execfence run [--sandbox] [--sandbox-mode audit|enforce] [--allow-degraded] [--record-artifacts] [--deny-on-new-executable] -- <command>
 execfence scan [paths...]
 execfence scan [--mode block|audit] [--fail-on critical,high] [--changed-only] [--full-ioc-scan] [--report <dir>] --ci [--format text|json|sarif] [paths...]
 execfence diff-scan [--staged] [--mode block|audit]
@@ -92,6 +93,8 @@ execfence incident create|bundle|timeline --from-report <report.json>
 execfence baseline add --from-report <report.json> --owner <owner> --reason <reason> --expires-at <date>
 execfence enrich [--preview] <report.json>
 execfence policy explain|test [--policy-pack <name>]
+execfence sandbox init|doctor|plan|explain|install-helper|uninstall-helper|helper-audit
+execfence helper audit
 execfence pack-audit
 execfence trust add <path|registry|action|scope> [--type file|registry|action|package-scope] --reason <reason> --owner <owner> --expires-at <date>
 execfence trust audit
@@ -119,6 +122,7 @@ Project-level files:
 | `.execfence/config/execfence.json` | `init` | Main project policy: mode, severities, roots, policy pack, reports, allowlists, custom signatures, and feature toggles. |
 | `.execfence/config/signatures.json` | `init` / user/team | Optional project IoCs and regex detections. The path is configurable with `signaturesFile`. |
 | `.execfence/config/baseline.json` | `init` / user/team | Optional reviewed exceptions for existing findings. The path is configurable with `baselineFile`. |
+| `.execfence/config/sandbox.json` | `init` / `sandbox init` | Sandbox policy for `execfence run --sandbox`, including profile, filesystem, process, network, and helper metadata settings. |
 | `.execfence/manifest.json` | `manifest` | Execution-surface inventory for package scripts, Makefiles, workflows, VS Code tasks, hooks, language build files, and agent rules. |
 | `.execfence/reports/<project>_<datetime>.json` | `run`, `scan`, `diff-scan`, `scan-history`, `doctor`, or `report` | Machine-readable evidence bundle with findings, hashes, snippets, git blame, recent commits, command, config, local analysis, runtime trace when available, enrichment, and research queries. |
 | `.execfence/cache/enrichment/` | report/enrich commands | Local cache for public-source enrichment of critical/high findings. |
@@ -131,7 +135,29 @@ Project-level files:
 
 The default report directory is `.execfence/reports` under the project root. ExecFence ignores `.execfence/` during scans so report bundles and config IoCs do not poison later scan output.
 
-Copyable examples are available in `examples/`. JSON schemas are published under `schema/` for the main config, V2 reports, external signatures, and reviewed baseline files.
+Copyable examples are available in `examples/`. JSON schemas are published under `schema/` for the main config, V2/V3 reports, sandbox policy, external signatures, and reviewed baseline files.
+
+## Sandbox Mode
+
+V3 adds a local sandbox policy surface for commands that execute project code:
+
+```sh
+execfence sandbox init
+execfence sandbox doctor
+execfence sandbox plan -- npm test
+execfence run --sandbox-mode audit -- npm test
+execfence run --sandbox -- npm test
+```
+
+`--sandbox-mode audit` records the sandbox profile, capability matrix, intended filesystem/process/network decisions, and post-run evidence without promising hard isolation. `--sandbox` is equivalent to `--sandbox-mode enforce`; if the required filesystem, process, or network enforcement is unavailable, ExecFence blocks before executing the command and explains the missing capability. Downgrade is never silent: use `--sandbox-mode audit` or explicit `--allow-degraded`.
+
+The base CLI does not require a sandbox helper. Optional helpers are validated through metadata at `.execfence/helper/execfence-helper.json`:
+
+```sh
+execfence helper audit
+execfence sandbox install-helper --metadata verified-helper.json
+execfence sandbox uninstall-helper
+```
 
 ## Configuration
 
@@ -154,6 +180,7 @@ Copyable examples are available in `examples/`. JSON schemas are published under
   "extraRegexSignatures": [],
   "signaturesFile": ".execfence/config/signatures.json",
   "baselineFile": ".execfence/config/baseline.json",
+  "sandboxFile": ".execfence/config/sandbox.json",
   "reportsDir": ".execfence/reports",
   "reportsGitignore": true,
   "runtimeTrace": {

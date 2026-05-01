@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.0.0 - 2026-05-01
+
+- Added sandbox policy layout with `.execfence/config/sandbox.json`, `execfence sandbox init|doctor|plan|explain`, helper metadata auditing, and deterministic capability reports.
+- Added `execfence run --sandbox` / `--sandbox-mode enforce` blocking when filesystem, process, or network enforcement is unavailable, with explicit audit/degraded downgrade controls.
+- Added `execfence run --sandbox-mode audit` to execute with sandbox policy evidence, capability matrix, blocked-operation plan, and V3 report sandbox sections.
+- Hardened agent/MCP reporting for broad shell, filesystem, network, credential access, and instructions that try to disable ExecFence.
+
 ## v2.5.0 - 2026-05-01
 
 - Added low-noise adoption mode with `execfence adopt`, correction plans, wiring suggestions, and optional suggested baselines for existing projects.

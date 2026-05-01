@@ -18,6 +18,7 @@
   "extraRegexSignatures": ["project-bad-[0-9]+"],
   "signaturesFile": ".execfence/config/signatures.json",
   "baselineFile": ".execfence/config/baseline.json",
+  "sandboxFile": ".execfence/config/sandbox.json",
   "reportsDir": ".execfence/reports",
   "reportsGitignore": true,
   "runtimeTrace": {

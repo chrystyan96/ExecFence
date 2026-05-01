@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/chrystyan96/execfence/master/schema/execfence-sandbox.schema.json",
+  "title": "execfence sandbox policy",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["mode", "profile", "fs", "process", "network"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "mode": { "enum": ["audit", "enforce"] },
+    "profile": { "enum": ["test", "build", "dev", "pack", "publish", "strict"] },
+    "allowDegraded": { "type": "boolean" },
+    "fs": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "readAllow": { "type": "array", "items": { "type": "string" } },
+        "writeAllow": { "type": "array", "items": { "type": "string" } },
+        "deny": { "type": "array", "items": { "type": "string" } },
+        "denyNewExecutable": { "type": "boolean" }
+      }
+    },
+    "process": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "allow": { "type": "array", "items": { "type": "string" } },
+        "deny": { "type": "array", "items": { "type": "string" } },
+        "superviseChildren": { "type": "boolean" }
+      }
+    },
+    "network": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "default": { "enum": ["allow", "audit", "deny"] },
+        "allow": { "type": "array", "items": { "type": "string" } },
+        "auditOnly": { "type": "boolean" }
+      }
+    },
+    "helper": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "path": { "type": "string" },
+        "requiredForEnforce": { "type": "boolean" }
+      }
+    }
+  }
+}
