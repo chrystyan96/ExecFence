@@ -2,7 +2,7 @@
   "name": "security-guardrails",
   "version": "0.1.0",
   "description": "Stack-aware malware and supply-chain guardrails plus portable agent instructions for persistent projects.",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "Chrystyan Byrnes",
   "type": "commonjs",
   "bin": {
@@ -42,10 +42,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TwinSparkGames/security-guardrails.git"
+    "url": "git+https://github.com/chrystyan96/security-guardrails.git"
   },
   "bugs": {
-    "url": "https://github.com/TwinSparkGames/security-guardrails/issues"
+    "url": "https://github.com/chrystyan96/security-guardrails/issues"
   },
-  "homepage": "https://github.com/TwinSparkGames/security-guardrails#readme"
+  "homepage": "https://github.com/chrystyan96/security-guardrails#readme"
 }
