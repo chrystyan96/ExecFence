@@ -1,6 +1,6 @@
 {
   "name": "security-guardrails",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Stack-aware malware and supply-chain guardrails plus portable agent instructions for persistent projects.",
   "license": "Apache-2.0",
   "author": "Chrystyan Byrnes",
@@ -18,8 +18,10 @@
     "LICENSE"
   ],
   "scripts": {
+    "pretest": "npm run scan",
     "test": "node --test",
     "scan": "node bin/security-guardrails.js scan .",
+    "coverage:guardrails": "node bin/security-guardrails.js coverage",
     "check": "npm test && npm run scan",
     "publish:dry": "node bin/security-guardrails.js publish",
     "pack:dry": "npm pack --dry-run"

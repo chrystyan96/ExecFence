@@ -10,12 +10,18 @@ const { detectStack, initProject } = require('../lib/init');
 test('detectStack identifies node and github actions', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-detect-'));
   fs.mkdirSync(path.join(root, '.github', 'workflows'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'package.json'), '{"scripts":{}}\n');
+  fs.writeFileSync(path.join(root, 'package.json'), '{"scripts":{},"devDependencies":{"electron":"1.0.0"},"engines":{"vscode":"^1.80.0"}}\n');
+  fs.writeFileSync(path.join(root, 'pnpm-lock.yaml'), 'lockfileVersion: 9\n');
+  fs.writeFileSync(path.join(root, 'mcp.json'), '{}\n');
 
   const stack = detectStack(root);
 
   assert.equal(stack.node, true);
   assert.equal(stack.githubActions, true);
+  assert.equal(stack.pnpm, true);
+  assert.equal(stack.electron, true);
+  assert.equal(stack.vscodeExtension, true);
+  assert.equal(stack.mcp, true);
 });
 
 test('initProject adds npm guard script and prepends existing hooks', () => {
@@ -31,8 +37,23 @@ test('initProject adds npm guard script and prepends existing hooks', () => {
   assert.equal(pkg.scripts.prebuild, 'npm run security:guardrails && npm test');
   assert.equal(fs.existsSync(path.join(root, '.security-guardrails.json')), true);
   assert.equal(config.mode, 'block');
+  assert.equal(config.policyPack, 'baseline');
+  assert.deepEqual(config.warnSeverities, ['medium', 'low']);
   assert.equal(config.$schema, 'https://raw.githubusercontent.com/chrystyan96/security-guardrails/master/schema/security-guardrails.schema.json');
   assert.equal(config.signaturesFile, '.security-guardrails.signatures.json');
+  assert.equal(config.baselineFile, '.security-guardrails.baseline.json');
+});
+
+test('initProject dry-run reports changes without writing files', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'security-guardrails-dry-run-'));
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ scripts: { prebuild: 'npm test' } }, null, 2));
+
+  const result = initProject({ cwd: root, dryRun: true });
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+
+  assert.ok(result.changes.includes('.security-guardrails.json: added'));
+  assert.equal(fs.existsSync(path.join(root, '.security-guardrails.json')), false);
+  assert.equal(pkg.scripts.prebuild, 'npm test');
 });
 
 test('initProject go preset creates a guarded Makefile', () => {
