@@ -1,6 +1,6 @@
 {
   "name": "execfence",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "ExecFence blocks suspicious code execution paths before build, dev, test, and CI.",
   "license": "Apache-2.0",
   "author": "Chrystyan Byrnes",
@@ -23,7 +23,7 @@
     "test": "node --test",
     "scan": "node bin/execfence.js scan .",
     "coverage:execfence": "node bin/execfence.js coverage",
-    "check": "npm test && npm run scan",
+    "check": "npm test && npm run scan && node bin/execfence.js ci",
     "publish:dry": "node bin/execfence.js publish",
     "pack:dry": "npm pack --dry-run"
   },

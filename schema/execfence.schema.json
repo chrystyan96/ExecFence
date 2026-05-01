@@ -141,11 +141,50 @@
       "properties": {
         "path": { "type": "string", "default": ".execfence/manifest.json" },
         "requireRunWrapper": { "type": "boolean", "default": true },
+        "blockNewEntrypoints": { "type": "boolean", "default": true },
         "sensitiveEntrypoints": {
           "type": "array",
           "items": { "type": "string" },
           "default": ["build", "test", "dev", "start", "serve", "watch", "prepare", "install", "postinstall"]
         }
+      }
+    },
+    "ci": {
+      "description": "Single-command CI policy for scan, manifest, deps, package, trust, and reporting checks.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "baseRef": { "type": "string", "default": "HEAD" },
+        "checks": {
+          "type": "array",
+          "items": { "enum": ["scan", "manifest-diff", "deps-diff", "pack-audit", "trust-audit"] },
+          "uniqueItems": true,
+          "default": ["scan", "manifest-diff", "deps-diff", "pack-audit", "trust-audit"]
+        }
+      }
+    },
+    "wire": {
+      "description": "Settings for execfence wire wrappers.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "packageScripts": { "type": "boolean", "default": true },
+        "workflows": { "type": "boolean", "default": true },
+        "makefile": { "type": "boolean", "default": true },
+        "vscodeTasks": { "type": "boolean", "default": true }
+      }
+    },
+    "deps": {
+      "description": "Deep dependency diff checks for lockfiles and package sources.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "detectRegistryDrift": { "type": "boolean", "default": true },
+        "detectSuspiciousSources": { "type": "boolean", "default": true },
+        "detectLifecycleEntries": { "type": "boolean", "default": true },
+        "detectBinEntries": { "type": "boolean", "default": true },
+        "detectTyposquatting": { "type": "boolean", "default": true }
       }
     },
     "trustStore": {
@@ -155,7 +194,19 @@
       "properties": {
         "files": { "type": "string", "default": ".execfence/trust/files.json" },
         "actions": { "type": "string", "default": ".execfence/trust/actions.json" },
-        "registries": { "type": "string", "default": ".execfence/trust/registries.json" }
+        "registries": { "type": "string", "default": ".execfence/trust/registries.json" },
+        "packageScopes": { "type": "string", "default": ".execfence/trust/package-scopes.json" },
+        "packageSources": { "type": "string", "default": ".execfence/trust/package-sources.json" }
+      }
+    },
+    "htmlReport": {
+      "description": "Local HTML report rendering options.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "includeRuntimeTrace": { "type": "boolean", "default": true },
+        "includeManifest": { "type": "boolean", "default": true }
       }
     },
     "reportRetention": {
@@ -165,6 +216,21 @@
       "properties": {
         "maxReports": { "type": "integer", "minimum": 1, "default": 100 },
         "maxAgeDays": { "type": "integer", "minimum": 1, "default": 90 }
+      }
+    },
+    "reports": {
+      "description": "Report UX and retention settings.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "retention": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "maxReports": { "type": "integer", "minimum": 1, "default": 100 },
+            "maxAgeDays": { "type": "integer", "minimum": 1, "default": 90 }
+          }
+        }
       }
     },
     "redaction": {

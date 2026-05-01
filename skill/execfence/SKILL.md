@@ -30,6 +30,10 @@ Prefer these commands when available:
 npx --yes execfence init --preset auto
 npx --yes execfence run -- npm test
 npx --yes execfence run -- npm run build
+npx --yes execfence run --record-artifacts --deny-on-new-executable -- npm test
+npx --yes execfence ci
+npx --yes execfence wire --dry-run
+npx --yes execfence deps diff
 npx --yes execfence manifest
 npx --yes execfence manifest diff
 npx --yes execfence scan --ci --format json
@@ -41,8 +45,13 @@ npx --yes execfence coverage
 npx --yes execfence scan-history --max-commits 1000
 npx --yes execfence doctor
 npx --yes execfence pack-audit
+npx --yes execfence trust audit
+npx --yes execfence baseline add --from-report .execfence/reports/<report>.json --owner <owner> --reason <reason> --expires-at <date>
 npx --yes execfence agent-report
 npx --yes execfence reports list
+npx --yes execfence reports latest
+npx --yes execfence reports open <report>
+npx --yes execfence incident bundle --from-report .execfence/reports/<report>.json
 npx --yes execfence pr-comment --report .execfence/reports/<report>.json
 npx --yes execfence explain suspicious-package-script
 npx --yes execfence install-hooks
@@ -78,13 +87,13 @@ Prefer project config under `.execfence/config/` for policy packs, reviewed exce
 ## User Configuration Surface
 
 Create project configuration through `execfence init`:
-- `.execfence/config/execfence.json`: main config for `policyPack`, `mode`, `blockSeverities`, `warnSeverities`, scan `roots`, `ignoreDirs`, `skipFiles`, `allowExecutables`, `extraSignatures`, `extraRegexSignatures`, `signaturesFile`, `baselineFile`, `reportsDir`, `reportsGitignore`, `runtimeTrace`, `analysis.webEnrichment`, `manifest`, `trustStore`, `reportRetention`, `redaction`, `workflowHardening`, `archiveAudit`, and `auditAllPackageScripts`.
+- `.execfence/config/execfence.json`: main config for `policyPack`, `mode`, `blockSeverities`, `warnSeverities`, scan `roots`, `ignoreDirs`, `skipFiles`, `allowExecutables`, `extraSignatures`, `extraRegexSignatures`, `signaturesFile`, `baselineFile`, `reportsDir`, `reportsGitignore`, `runtimeTrace`, `analysis.webEnrichment`, `manifest.blockNewEntrypoints`, `ci`, `wire`, `deps`, `trustStore`, `reportRetention`, `reports.retention`, `htmlReport`, `redaction`, `workflowHardening`, `archiveAudit`, and `auditAllPackageScripts`.
 - `.execfence/config/signatures.json`: optional team-owned literal and regex indicators. Use this for new IoCs instead of editing scanner code.
 - `.execfence/config/baseline.json`: optional reviewed exceptions for existing findings. Require `findingId`, `file`, `reason`, `owner`, `expiresAt`, and preferably `sha256`.
 - `.execfence/reports/`: automatic JSON reports. Keep it gitignored unless the user sets `reportsGitignore: false`.
 - `.execfence/manifest.json`: generated execution-surface manifest for package scripts, Makefiles, workflows, tasks, hooks, language build files, and agent rules.
 - `.execfence/cache/enrichment/`: local cache for public-source enrichment of critical/high findings.
-- `.execfence/trust/*.json`: trust stores for reviewed files, actions, and registries.
+- `.execfence/trust/*.json`: trust stores for reviewed files, actions, registries, package scopes, and package sources.
 - `.execfence/quarantine/<report-id>/metadata.json`: quarantine metadata only; do not delete payloads automatically.
 - `<home>/.agents/skills/execfence/defaults.json`: read-only global defaults installed with the skill. Do not ask the user to edit it; project config wins.
 

@@ -39,16 +39,48 @@
   "manifest": {
     "path": ".execfence/manifest.json",
     "requireRunWrapper": true,
+    "blockNewEntrypoints": true,
     "sensitiveEntrypoints": ["build", "test", "dev", "start", "serve", "watch", "prepare", "install", "postinstall"]
+  },
+  "ci": {
+    "enabled": true,
+    "baseRef": "HEAD",
+    "checks": ["scan", "manifest-diff", "deps-diff", "pack-audit", "trust-audit"]
+  },
+  "wire": {
+    "packageScripts": true,
+    "workflows": true,
+    "makefile": true,
+    "vscodeTasks": true
+  },
+  "deps": {
+    "detectRegistryDrift": true,
+    "detectSuspiciousSources": true,
+    "detectLifecycleEntries": true,
+    "detectBinEntries": true,
+    "detectTyposquatting": true
   },
   "trustStore": {
     "files": ".execfence/trust/files.json",
     "actions": ".execfence/trust/actions.json",
-    "registries": ".execfence/trust/registries.json"
+    "registries": ".execfence/trust/registries.json",
+    "packageScopes": ".execfence/trust/package-scopes.json",
+    "packageSources": ".execfence/trust/package-sources.json"
+  },
+  "htmlReport": {
+    "enabled": true,
+    "includeRuntimeTrace": true,
+    "includeManifest": true
   },
   "reportRetention": {
     "maxReports": 100,
     "maxAgeDays": 90
+  },
+  "reports": {
+    "retention": {
+      "maxReports": 100,
+      "maxAgeDays": 90
+    }
   },
   "redaction": {
     "redactLocalPaths": true,
