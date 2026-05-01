@@ -25,7 +25,7 @@ Modern software projects execute code in many places that do not look like appli
 - language-specific build scripts
 - agent and MCP tool manifests
 
-Recent threat reporting shows why this matters.
+Recent threat reporting shows why this matters. The practical risk is not only "malware exists"; it is that malware can be hidden in exactly the files developers are trained to trust during ordinary work.
 
 Trend Micro described Void Dokkaebi activity where fake job interview lures pushed developers toward malicious code repositories, turning repository execution into a malware delivery path: [Void Dokkaebi Uses Fake Job Interview Lure to Spread Malware via Code Repositories](https://www.trendmicro.com/en_us/research/26/d/void-dokkaebi-uses-fake-job-interview-lure-to-spread-malware-via-code-repositories.html).
 
@@ -34,6 +34,64 @@ Microsoft described the Contagious Interview campaign as a long-running social e
 Datadog documented the 2026 axios npm compromise, where malicious releases introduced a dependency with a `postinstall` script that downloaded and ran a cross-platform RAT during install, then removed traces of the hook from disk: [Compromised axios npm package delivers cross-platform RAT](https://securitylabs.datadoghq.com/articles/axios-npm-supply-chain-compromise/).
 
 Those incidents share the same operational lesson: the point of execution is often mundane. A developer runs a test, opens a folder, installs dependencies, accepts an interview task, or lets CI run a script. ExecFence exists to put a reviewable fence around those moments.
+
+## Origin Story: From Suspicious Build Output To A Product
+
+ExecFence started from a concrete workflow problem: a project test/build step produced a temporary Go test binary that was flagged by local security tooling as `PasswordStealer.Spyware.Stealer.DDS`. The important question was not only whether that specific binary was malicious. The bigger question was:
+
+> What guardrail should exist so a developer does not have to manually notice every injected payload before running build, dev, or test?
+
+That question maps directly to the attack pattern described by Trend Micro in its Void Dokkaebi research. In that campaign, the attacker does not need the victim to double-click an obvious malware attachment. The attacker can rely on developer habits:
+
+- clone or open a repository
+- trust a coding exercise, interview task, dependency, or workspace
+- run a build/test/dev command
+- let IDE tasks, package hooks, or scripts execute
+- expose local files, tokens, browser data, wallets, SSH keys, cloud credentials, or source code
+
+ExecFence was created to make that path less automatic. It turns "run the project" into a guarded workflow:
+
+```sh
+npx --yes execfence scan
+npx --yes execfence run -- npm test
+npx --yes execfence run --sandbox-mode audit -- npm run build
+```
+
+The design goal is deliberately narrow: block or document suspicious execution before it reaches the user's machine, CI credentials, package publishing credentials, or agent tool access.
+
+## How ExecFence Maps To The Void Dokkaebi Pattern
+
+Trend Micro's Void Dokkaebi article is important because it focuses on malware delivered through code repositories and social engineering against developers. ExecFence responds to that class of risk with specific controls:
+
+| Attack pressure | ExecFence response |
+| --- | --- |
+| Developer is told to clone/open a repository | `execfence scan`, `doctor`, and known IoC checks inspect the repo before execution. |
+| Interview/task project hides suspicious JavaScript | Scanner rules look for injected loader markers, dynamic loaders, obfuscation, shell execution, and known IoCs. |
+| Repository uses IDE/task automation | `.vscode/tasks.json` and folder-open execution are treated as execution surfaces. |
+| Package install/build runs attacker code | npm/pnpm/yarn/bun lifecycle scripts and lockfiles are audited. |
+| Malware drops or modifies binaries | Runtime trace can detect created/modified executable artifacts, and `--deny-on-new-executable` can block after execution. |
+| CI or agent runs changed scripts | `manifest diff`, `coverage`, `ci`, and `agent-report` identify new or unguarded execution entrypoints. |
+| Agent tool config exposes shell/filesystem/network | MCP/tool/agent configs are audited for broad shell, filesystem, browser, credential, or network access. |
+| User needs evidence after a block | Every blocking-capable command writes a timestamped JSON report under `.execfence/reports/`. |
+
+ExecFence does not claim to detect every Void Dokkaebi sample or every future campaign. Its value is operational: it places a default review and evidence layer at the point where repository code would execute.
+
+## Functional Overview
+
+ExecFence is made of six cooperating surfaces:
+
+1. **Static scanner**: looks for known IoCs, suspicious loaders, risky scripts, workflow hardening issues, lockfile problems, and unexpected binaries/archives.
+2. **Runtime gate**: wraps commands with `execfence run -- <command>`, performs preflight scanning, executes only when allowed, records runtime evidence, and rescans changed files.
+3. **Sandbox readiness and enforcement switch**: records sandbox policy in audit mode and blocks enforce mode when real filesystem/process/network enforcement is unavailable.
+4. **Execution manifest**: inventories package scripts, workflows, Makefiles, language build files, tasks, hooks, and agent rules.
+5. **Supply-chain checks**: compares dependency and lockfile changes, audits package contents, and manages trust stores.
+6. **Agent skill and rules**: teaches coding agents to use the guardrail before running project commands or changing execution surfaces.
+
+The result is not one big scanner command. It is a workflow:
+
+```text
+detect stack -> initialize policy -> scan -> wrap execution -> record evidence -> compare changes -> investigate blocks
+```
 
 ## Threat Model
 

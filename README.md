@@ -16,7 +16,7 @@ Relevant background:
 
 ExecFence does not replace endpoint security or dependency review. It adds a local fence at the point where suspicious repository code would become active: build, dev, test, install, pack, publish, CI, and agent execution.
 
-Full project documentation is in [docs/README.md](docs/README.md).
+Full project documentation is published at [https://chrystyan96.github.io/ExecFence/](https://chrystyan96.github.io/ExecFence/) and mirrored in [docs/README.md](docs/README.md).
 
 ## Quick Start
 
