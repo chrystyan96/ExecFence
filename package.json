@@ -24,7 +24,9 @@
     "test": "node --test",
     "scan": "node bin/execfence.js scan .",
     "coverage:execfence": "node bin/execfence.js coverage",
+    "pr:check": "npm test && npm run scan",
     "check": "npm test && npm run scan && node bin/execfence.js ci",
+    "release:weekly-check": "npm run check && node bin/execfence.js run -- npm test && node bin/execfence.js ci && node bin/execfence.js manifest && node bin/execfence.js pack-audit && npm pack --dry-run",
     "publish:dry": "node bin/execfence.js publish",
     "pack:dry": "npm pack --dry-run"
   },
