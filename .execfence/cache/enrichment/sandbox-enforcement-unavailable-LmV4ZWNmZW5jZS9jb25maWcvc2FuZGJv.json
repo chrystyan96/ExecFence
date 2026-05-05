@@ -1,0 +1,20 @@
+{
+  "findingId": "sandbox-enforcement-unavailable",
+  "status": "complete",
+  "indicators": {
+    "domains": [],
+    "packages": [],
+    "hashes": [],
+    "ruleIds": [
+      "sandbox-enforcement-unavailable"
+    ]
+  },
+  "sources": [
+    {
+      "name": "web-query",
+      "url": "sandbox-enforcement-unavailable",
+      "status": "queued",
+      "summary": "Search public reporting for sandbox-enforcement-unavailable"
+    }
+  ]
+}

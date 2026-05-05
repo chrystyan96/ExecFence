@@ -1,0 +1,390 @@
+{
+  "metadata": {
+    "schemaVersion": 2,
+    "reportId": "execfence_2026-05-01T19-26-12-138Z",
+    "generatedAt": "2026-05-01T19:26:12.138Z",
+    "tool": "ExecFence",
+    "packageName": "execfence",
+    "packageVersion": "3.0.0",
+    "cwd": "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails",
+    "projectName": "execfence",
+    "gitBranch": "master",
+    "gitCommit": "41d9cd59a7acab2f5248c6b333f941f970498342",
+    "platform": "win32",
+    "arch": "x64",
+    "nodeVersion": "v25.9.0",
+    "hostname": "LAPTOP-1PMVJFRM"
+  },
+  "command": {
+    "display": "execfence scan --changed-only --ci --format json",
+    "argv": [
+      "execfence",
+      "scan",
+      "--changed-only",
+      "--ci",
+      "--format",
+      "json"
+    ]
+  },
+  "runtimeTrace": null,
+  "sandbox": null,
+  "config": {
+    "configPath": null,
+    "baselinePath": null,
+    "policyPack": "baseline",
+    "mode": "block",
+    "blockSeverities": [
+      "critical",
+      "high"
+    ],
+    "warnSeverities": [
+      "medium",
+      "low"
+    ],
+    "roots": [
+      "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\docs\\article.md"
+    ],
+    "reportsDir": ".execfence/reports",
+    "analysis": {
+      "webEnrichment": {
+        "enabled": false,
+        "maxQueriesPerFinding": 3,
+        "allowedDomains": []
+      }
+    }
+  },
+  "summary": {
+    "ok": false,
+    "totalFindings": 1,
+    "blockedFindings": 1,
+    "warningFindings": 0,
+    "suppressedFindings": 0
+  },
+  "manifest": {
+    "schemaVersion": 2,
+    "generatedAt": "2026-05-01T19:26:12.700Z",
+    "cwd": "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails",
+    "entrypoints": [
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: node bin/execfence.js ci",
+        "command": "node bin/execfence.js ci",
+        "guarded": true,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: node bin/execfence.js ci",
+        "guard": "execfence"
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: node bin/execfence.js manifest",
+        "command": "node bin/execfence.js manifest",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: node bin/execfence.js manifest",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: node bin/execfence.js pack-audit",
+        "command": "node bin/execfence.js pack-audit",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: node bin/execfence.js pack-audit",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: node bin/execfence.js run -- npm test",
+        "command": "node bin/execfence.js run -- npm test",
+        "guarded": true,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: node bin/execfence.js run -- npm test",
+        "guard": "execfence"
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "command": "node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "guarded": true,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "guard": "execfence"
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: npm ci",
+        "command": "npm ci",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: npm ci",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: npm pack --dry-run",
+        "command": "npm pack --dry-run",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: npm pack --dry-run",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: npm run scan",
+        "command": "npm run scan",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: npm run scan",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: npm test",
+        "command": "npm test",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: npm test",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node bin/execfence.js ci",
+        "command": "node bin/execfence.js ci",
+        "guarded": true,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node bin/execfence.js ci",
+        "guard": "execfence"
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node bin/execfence.js manifest",
+        "command": "node bin/execfence.js manifest",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node bin/execfence.js manifest",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node bin/execfence.js pack-audit",
+        "command": "node bin/execfence.js pack-audit",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node bin/execfence.js pack-audit",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node bin/execfence.js run -- npm test",
+        "command": "node bin/execfence.js run -- npm test",
+        "guarded": true,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node bin/execfence.js run -- npm test",
+        "guard": "execfence"
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "command": "node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "guarded": true,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "guard": "execfence"
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node scripts/update-changelog.cjs",
+        "command": "node scripts/update-changelog.cjs",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node scripts/update-changelog.cjs",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm ci",
+        "command": "npm ci",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm ci",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm install -g npm@latest",
+        "command": "npm install -g npm@latest",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm install -g npm@latest",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm publish --access public --provenance",
+        "command": "npm publish --access public --provenance",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm publish --access public --provenance",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm run scan",
+        "command": "npm run scan",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm run scan",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm test",
+        "command": "npm test",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm test",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm version \"${{ inputs.version }}\" --no-git-tag-version",
+        "command": "npm version \"${{ inputs.version }}\" --no-git-tag-version",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm version \"${{ inputs.version }}\" --no-git-tag-version",
+        "guard": null
+      },
+      {
+        "type": "package-script",
+        "file": "package.json",
+        "name": "pretest",
+        "command": "npm run scan",
+        "guarded": false,
+        "sensitive": true,
+        "id": "package-script:package.json:pretest",
+        "guard": null
+      },
+      {
+        "type": "package-script",
+        "file": "package.json",
+        "name": "test",
+        "command": "node --test",
+        "guarded": false,
+        "sensitive": true,
+        "id": "package-script:package.json:test",
+        "guard": null
+      }
+    ],
+    "summary": {
+      "total": 23,
+      "guarded": 6,
+      "sensitive": 23
+    }
+  },
+  "changeRisk": {
+    "level": "high",
+    "reasons": [
+      "blocked finding present"
+    ]
+  },
+  "findings": [
+    {
+      "id": "hidden-node-require-loader",
+      "severity": "high",
+      "file": "docs/article.md",
+      "line": 171,
+      "detail": "Matched /global\\[[^\\]]+\\]\\s*=\\s*require/",
+      "column": null,
+      "symbol": null,
+      "sha256": "8531e06e92fb7c447ce45e06f3f467cd9d5099b0b54d0bbcfe5b7c0b8ccc1000",
+      "snippet": "169: ExecFence looks for JavaScript patterns that are unusual in normal config files but common in loader-style malware:\n170: \n171: - `global[...] = require(...)`\n172: - dynamic `Function` or constructor loaders\n173: - `eval` combined with encoded or generated strings",
+      "rule": {
+        "id": "hidden-node-require-loader",
+        "severity": "high",
+        "description": "Matched /global\\[[^\\]]+\\]\\s*=\\s*require/"
+      },
+      "reason": "Matched /global\\[[^\\]]+\\]\\s*=\\s*require/",
+      "remediation": "Review the artifact provenance, remove the suspicious pattern, or add a narrow reviewed exception.",
+      "confidence": "medium",
+      "git": {
+        "blame": "00000000 (Not Committed Yet 2026-05-01 16:26:12 -0300 171) - `global[...] = require(...)`",
+        "recentCommits": "41d9cd5 Add standalone ExecFence article",
+        "status": "M docs/article.md"
+      },
+      "analysis": {
+        "local": "Matched /global\\[[^\\]]+\\]\\s*=\\s*require/ The finding is in docs/article.md:171. Review this path before running build, dev, test, or CI commands because it may execute during normal project workflows.",
+        "whyItMatters": "The finding is in code or config that may execute as part of development or CI workflows.",
+        "exactNextAction": "Review the artifact provenance, remove the suspicious pattern, or add a narrow reviewed exception."
+      },
+      "research": {
+        "queries": [
+          "ExecFence hidden-node-require-loader",
+          "hidden-node-require-loader docs/article.md",
+          "Matched /global\\[[^\\]]+\\]\\s*=\\s*require/"
+        ],
+        "webEnrichment": []
+      }
+    }
+  ],
+  "enrichment": {
+    "status": "complete",
+    "sources": [
+      "npm",
+      "osv",
+      "github-advisory-manual",
+      "cisa-kev-manual",
+      "web-query"
+    ],
+    "results": [
+      {
+        "findingId": "hidden-node-require-loader",
+        "status": "complete",
+        "indicators": {
+          "domains": [
+            "article.md"
+          ],
+          "packages": [],
+          "hashes": [],
+          "ruleIds": [
+            "hidden-node-require-loader"
+          ]
+        },
+        "sources": [
+          {
+            "name": "web-query",
+            "url": "article.md",
+            "status": "queued",
+            "summary": "Search reputable sources for article.md"
+          }
+        ]
+      }
+    ],
+    "errors": []
+  },
+  "recommendedActions": [
+    "Do not run build, dev, test, or CI commands until the blocked findings are reviewed.",
+    "Preserve the report and suspicious files before cleanup."
+  ],
+  "suppressedFindings": []
+}

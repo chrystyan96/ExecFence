@@ -1,0 +1,778 @@
+{
+  "metadata": {
+    "schemaVersion": 2,
+    "reportId": "execfence_2026-05-01T18-23-38-022Z",
+    "generatedAt": "2026-05-01T18:23:38.022Z",
+    "tool": "ExecFence",
+    "packageName": "execfence",
+    "packageVersion": "2.1.0",
+    "cwd": "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails",
+    "projectName": "execfence",
+    "gitBranch": "master",
+    "gitCommit": "c147c7bbbecf75ad14324570c8cc2cc4a1aeac66",
+    "platform": "win32",
+    "arch": "x64",
+    "nodeVersion": "v25.9.0",
+    "hostname": "LAPTOP-1PMVJFRM"
+  },
+  "command": {
+    "display": "execfence ci",
+    "argv": [
+      "execfence",
+      "ci"
+    ]
+  },
+  "runtimeTrace": null,
+  "config": {
+    "configPath": null,
+    "baselinePath": null,
+    "policyPack": "baseline",
+    "mode": "ci",
+    "blockSeverities": [
+      "critical",
+      "high"
+    ],
+    "warnSeverities": [
+      "medium",
+      "low"
+    ],
+    "roots": [
+      "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\scripts",
+      "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\.github"
+    ],
+    "reportsDir": ".execfence/reports",
+    "analysis": {
+      "webEnrichment": {
+        "enabled": false,
+        "maxQueriesPerFinding": 3,
+        "allowedDomains": []
+      }
+    }
+  },
+  "summary": {
+    "ok": false,
+    "totalFindings": 7,
+    "blockedFindings": 7,
+    "warningFindings": 0,
+    "suppressedFindings": 0
+  },
+  "manifest": {
+    "schemaVersion": 2,
+    "generatedAt": "2026-05-01T18:23:36.140Z",
+    "cwd": "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails",
+    "entrypoints": [
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: node bin/execfence.js ci",
+        "command": "node bin/execfence.js ci",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: node bin/execfence.js ci",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: node bin/execfence.js manifest",
+        "command": "node bin/execfence.js manifest",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: node bin/execfence.js manifest",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: node bin/execfence.js pack-audit",
+        "command": "node bin/execfence.js pack-audit",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: node bin/execfence.js pack-audit",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: node bin/execfence.js run -- npm test",
+        "command": "node bin/execfence.js run -- npm test",
+        "guarded": true,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: node bin/execfence.js run -- npm test",
+        "guard": "execfence"
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "command": "node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "guarded": true,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "guard": "execfence"
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: npm ci",
+        "command": "npm ci",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: npm ci",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: npm pack --dry-run",
+        "command": "npm pack --dry-run",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: npm pack --dry-run",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: npm run scan",
+        "command": "npm run scan",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: npm run scan",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: npm test",
+        "command": "npm test",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: npm test",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node bin/execfence.js ci",
+        "command": "node bin/execfence.js ci",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node bin/execfence.js ci",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node bin/execfence.js manifest",
+        "command": "node bin/execfence.js manifest",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node bin/execfence.js manifest",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node bin/execfence.js pack-audit",
+        "command": "node bin/execfence.js pack-audit",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node bin/execfence.js pack-audit",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node bin/execfence.js run -- npm test",
+        "command": "node bin/execfence.js run -- npm test",
+        "guarded": true,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node bin/execfence.js run -- npm test",
+        "guard": "execfence"
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "command": "node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "guarded": true,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "guard": "execfence"
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node scripts/update-changelog.cjs",
+        "command": "node scripts/update-changelog.cjs",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node scripts/update-changelog.cjs",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm ci",
+        "command": "npm ci",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm ci",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm install -g npm@latest",
+        "command": "npm install -g npm@latest",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm install -g npm@latest",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm publish --access public --provenance",
+        "command": "npm publish --access public --provenance",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm publish --access public --provenance",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm run scan",
+        "command": "npm run scan",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm run scan",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm test",
+        "command": "npm test",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm test",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm version \"${{ inputs.version }}\" --no-git-tag-version",
+        "command": "npm version \"${{ inputs.version }}\" --no-git-tag-version",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm version \"${{ inputs.version }}\" --no-git-tag-version",
+        "guard": null
+      },
+      {
+        "type": "package-script",
+        "file": "package.json",
+        "name": "pretest",
+        "command": "npm run scan",
+        "guarded": false,
+        "sensitive": true,
+        "id": "package-script:package.json:pretest",
+        "guard": null
+      },
+      {
+        "type": "package-script",
+        "file": "package.json",
+        "name": "test",
+        "command": "node --test",
+        "guarded": false,
+        "sensitive": true,
+        "id": "package-script:package.json:test",
+        "guard": null
+      }
+    ],
+    "summary": {
+      "total": 23,
+      "guarded": 4,
+      "sensitive": 23
+    }
+  },
+  "changeRisk": {
+    "level": "high",
+    "reasons": [
+      "New execution entrypoint: github-action-run - run: node bin/execfence.js ci",
+      "New execution entrypoint: github-action-run - run: node bin/execfence.js ci",
+      "Package includes file with obfuscation-like content.",
+      "Package includes file with obfuscation-like content.",
+      "Package includes file with obfuscation-like content.",
+      "Package includes file with obfuscation-like content.",
+      "Package includes file with obfuscation-like content."
+    ]
+  },
+  "findings": [
+    {
+      "id": "manifest-new-entrypoint",
+      "severity": "high",
+      "file": ".github/workflows/ci.yml",
+      "line": 1,
+      "detail": "New execution entrypoint: github-action-run - run: node bin/execfence.js ci",
+      "remediation": "Review the artifact provenance, remove the suspicious pattern, or add a narrow reviewed exception.",
+      "column": null,
+      "symbol": null,
+      "sha256": "fd937b7d277eb8291a1272b5733a200162bcb3661bfeae979ac3e2f7d4b6c1a7",
+      "snippet": "1: name: CI\n2: \n3: on:",
+      "rule": {
+        "id": "manifest-new-entrypoint",
+        "severity": "high",
+        "description": "New execution entrypoint: github-action-run - run: node bin/execfence.js ci"
+      },
+      "reason": "New execution entrypoint: github-action-run - run: node bin/execfence.js ci",
+      "confidence": "medium",
+      "git": {
+        "blame": "db357589 (Chrystyan Byrnes 2026-05-01 13:57:44 -0300 1) name: CI",
+        "recentCommits": "c147c7b Make ExecFence a runtime gate for development execution\nc06811a Make ExecFence the operational guardrail surface\n3300788 Promote guardrails to operational 1.0\ndb35758 Harden releases and broaden guardrail coverage",
+        "status": "M .github/workflows/ci.yml"
+      },
+      "analysis": {
+        "local": "New execution entrypoint: github-action-run - run: node bin/execfence.js ci The finding is in .github/workflows/ci.yml:1. Review this path before running build, dev, test, or CI commands because it may execute during normal project workflows."
+      },
+      "research": {
+        "queries": [
+          "ExecFence manifest-new-entrypoint",
+          "manifest-new-entrypoint .github/workflows/ci.yml",
+          "New execution entrypoint: github-action-run - run: node bin/execfence.js ci"
+        ],
+        "webEnrichment": []
+      }
+    },
+    {
+      "id": "manifest-new-entrypoint",
+      "severity": "high",
+      "file": ".github/workflows/release.yml",
+      "line": 1,
+      "detail": "New execution entrypoint: github-action-run - run: node bin/execfence.js ci",
+      "remediation": "Review the artifact provenance, remove the suspicious pattern, or add a narrow reviewed exception.",
+      "column": null,
+      "symbol": null,
+      "sha256": "123b3de2ae2e988e68db7fe908ccec919c73af744e8d371003b47ecb7884eb8a",
+      "snippet": "1: name: Release\n2: \n3: on:",
+      "rule": {
+        "id": "manifest-new-entrypoint",
+        "severity": "high",
+        "description": "New execution entrypoint: github-action-run - run: node bin/execfence.js ci"
+      },
+      "reason": "New execution entrypoint: github-action-run - run: node bin/execfence.js ci",
+      "confidence": "medium",
+      "git": {
+        "blame": "db357589 (Chrystyan Byrnes 2026-05-01 13:57:44 -0300 1) name: Release",
+        "recentCommits": "c147c7b Make ExecFence a runtime gate for development execution\nc06811a Make ExecFence the operational guardrail surface\n3300788 Promote guardrails to operational 1.0\ndb35758 Harden releases and broaden guardrail coverage",
+        "status": "M .github/workflows/release.yml"
+      },
+      "analysis": {
+        "local": "New execution entrypoint: github-action-run - run: node bin/execfence.js ci The finding is in .github/workflows/release.yml:1. Review this path before running build, dev, test, or CI commands because it may execute during normal project workflows."
+      },
+      "research": {
+        "queries": [
+          "ExecFence manifest-new-entrypoint",
+          "manifest-new-entrypoint .github/workflows/release.yml",
+          "New execution entrypoint: github-action-run - run: node bin/execfence.js ci"
+        ],
+        "webEnrichment": []
+      }
+    },
+    {
+      "id": "pack-obfuscated-file",
+      "severity": "high",
+      "file": "README.md",
+      "line": 1,
+      "detail": "Package includes file with obfuscation-like content.",
+      "column": null,
+      "symbol": null,
+      "sha256": "8c27849c330aba74199d1f2c9380c3b8ec263da850a69eebaf3af17f07afcf38",
+      "snippet": "1: # ExecFence\n2: \n3: Execution-fence guardrails for persistent web, desktop, backend, and local-agent projects.",
+      "rule": {
+        "id": "pack-obfuscated-file",
+        "severity": "high",
+        "description": "Package includes file with obfuscation-like content."
+      },
+      "reason": "Package includes file with obfuscation-like content.",
+      "remediation": "Review the artifact provenance, remove the suspicious pattern, or add a narrow reviewed exception.",
+      "confidence": "medium",
+      "git": {
+        "blame": "c06811a2 (Chrystyan Byrnes 2026-05-01 14:44:35 -0300 1) # ExecFence",
+        "recentCommits": "c147c7b Make ExecFence a runtime gate for development execution\nc06811a Make ExecFence the operational guardrail surface\ncecfa1e Clarify guardrail configuration surfaces\n3300788 Promote guardrails to operational 1.0\ndb35758 Harden releases and broaden guardrail coverage",
+        "status": "M README.md"
+      },
+      "analysis": {
+        "local": "Package includes file with obfuscation-like content. The finding is in README.md:1. Review this path before running build, dev, test, or CI commands because it may execute during normal project workflows."
+      },
+      "research": {
+        "queries": [
+          "ExecFence pack-obfuscated-file",
+          "pack-obfuscated-file README.md",
+          "Package includes file with obfuscation-like content."
+        ],
+        "webEnrichment": []
+      }
+    },
+    {
+      "id": "pack-obfuscated-file",
+      "severity": "high",
+      "file": "lib/scanner.js",
+      "line": 1,
+      "detail": "Package includes file with obfuscation-like content.",
+      "column": null,
+      "symbol": null,
+      "sha256": "96eede1b8e7a6481c42173a155b43ca8feb1f2f3bf86c71a6834ff253377317a",
+      "snippet": "1: 'use strict';\n2: \n3: const fs = require('node:fs');",
+      "rule": {
+        "id": "pack-obfuscated-file",
+        "severity": "high",
+        "description": "Package includes file with obfuscation-like content."
+      },
+      "reason": "Package includes file with obfuscation-like content.",
+      "remediation": "Review the artifact provenance, remove the suspicious pattern, or add a narrow reviewed exception.",
+      "confidence": "medium",
+      "git": {
+        "blame": "^aef6992 (Chrystyan Byrnes 2026-05-01 13:13:40 -0300 1) 'use strict';",
+        "recentCommits": "c06811a Make ExecFence the operational guardrail surface\n3300788 Promote guardrails to operational 1.0\ndb35758 Harden releases and broaden guardrail coverage\ncbd3e5d Expand guardrails into CI, history, and agent workflows\naef6992 Establish reusable guardrails before project builds",
+        "status": ""
+      },
+      "analysis": {
+        "local": "Package includes file with obfuscation-like content. The finding is in lib/scanner.js:1. Review this path before running build, dev, test, or CI commands because it may execute during normal project workflows."
+      },
+      "research": {
+        "queries": [
+          "ExecFence pack-obfuscated-file",
+          "pack-obfuscated-file lib/scanner.js",
+          "Package includes file with obfuscation-like content."
+        ],
+        "webEnrichment": []
+      }
+    },
+    {
+      "id": "pack-obfuscated-file",
+      "severity": "high",
+      "file": "lib/signatures.js",
+      "line": 1,
+      "detail": "Package includes file with obfuscation-like content.",
+      "column": null,
+      "symbol": null,
+      "sha256": "8e0887b43a5e798a9081272c9b2c20dcd193dcc7ecc94bffdfadb2ca1b0243d5",
+      "snippet": "1: 'use strict';\n2: \n3: const exactSignatures = [",
+      "rule": {
+        "id": "pack-obfuscated-file",
+        "severity": "high",
+        "description": "Package includes file with obfuscation-like content."
+      },
+      "reason": "Package includes file with obfuscation-like content.",
+      "remediation": "Review the artifact provenance, remove the suspicious pattern, or add a narrow reviewed exception.",
+      "confidence": "medium",
+      "git": {
+        "blame": "^aef6992 (Chrystyan Byrnes 2026-05-01 13:13:40 -0300 1) 'use strict';",
+        "recentCommits": "aef6992 Establish reusable guardrails before project builds",
+        "status": ""
+      },
+      "analysis": {
+        "local": "Package includes file with obfuscation-like content. The finding is in lib/signatures.js:1. Review this path before running build, dev, test, or CI commands because it may execute during normal project workflows."
+      },
+      "research": {
+        "queries": [
+          "ExecFence pack-obfuscated-file",
+          "pack-obfuscated-file lib/signatures.js",
+          "Package includes file with obfuscation-like content."
+        ],
+        "webEnrichment": []
+      }
+    },
+    {
+      "id": "pack-obfuscated-file",
+      "severity": "high",
+      "file": "lib/supply-chain.js",
+      "line": 1,
+      "detail": "Package includes file with obfuscation-like content.",
+      "column": null,
+      "symbol": null,
+      "sha256": "731b679bd5f756ecc9253dfee504208a33ce857ae07b79b93fb8630cf531c43e",
+      "snippet": "1: 'use strict';\n2: \n3: const fs = require('node:fs');",
+      "rule": {
+        "id": "pack-obfuscated-file",
+        "severity": "high",
+        "description": "Package includes file with obfuscation-like content."
+      },
+      "reason": "Package includes file with obfuscation-like content.",
+      "remediation": "Review the artifact provenance, remove the suspicious pattern, or add a narrow reviewed exception.",
+      "confidence": "medium",
+      "git": {
+        "blame": "c147c7bb (Chrystyan Byrnes 2026-05-01 15:09:35 -0300 1) 'use strict';",
+        "recentCommits": "c147c7b Make ExecFence a runtime gate for development execution",
+        "status": "M lib/supply-chain.js"
+      },
+      "analysis": {
+        "local": "Package includes file with obfuscation-like content. The finding is in lib/supply-chain.js:1. Review this path before running build, dev, test, or CI commands because it may execute during normal project workflows."
+      },
+      "research": {
+        "queries": [
+          "ExecFence pack-obfuscated-file",
+          "pack-obfuscated-file lib/supply-chain.js",
+          "Package includes file with obfuscation-like content."
+        ],
+        "webEnrichment": []
+      }
+    },
+    {
+      "id": "pack-obfuscated-file",
+      "severity": "high",
+      "file": "skill/execfence/SKILL.md",
+      "line": 1,
+      "detail": "Package includes file with obfuscation-like content.",
+      "column": null,
+      "symbol": null,
+      "sha256": "7427b0d61b9298302d7bcc2e725868bc4412509413625314af1e9b39a6e8c438",
+      "snippet": "1: ---\n2: name: execfence\n3: description: Use when creating or hardening persistent projects that run on the web, build executable code, use Node/Go/Rust/Python supply chains, run CI/CD, or access the user's filesystem, credentials, browser, network, shell, desktop API",
+      "rule": {
+        "id": "pack-obfuscated-file",
+        "severity": "high",
+        "description": "Package includes file with obfuscation-like content."
+      },
+      "reason": "Package includes file with obfuscation-like content.",
+      "remediation": "Review the artifact provenance, remove the suspicious pattern, or add a narrow reviewed exception.",
+      "confidence": "medium",
+      "git": {
+        "blame": "^aef6992 skill/security-guardrails/SKILL.md (Chrystyan Byrnes 2026-05-01 13:13:40 -0300 1) ---",
+        "recentCommits": "c147c7b Make ExecFence a runtime gate for development execution\nc06811a Make ExecFence the operational guardrail surface",
+        "status": "M skill/execfence/SKILL.md"
+      },
+      "analysis": {
+        "local": "Package includes file with obfuscation-like content. The finding is in skill/execfence/SKILL.md:1. Review this path before running build, dev, test, or CI commands because it may execute during normal project workflows."
+      },
+      "research": {
+        "queries": [
+          "ExecFence pack-obfuscated-file",
+          "pack-obfuscated-file skill/execfence/SKILL.md",
+          "Package includes file with obfuscation-like content."
+        ],
+        "webEnrichment": []
+      }
+    }
+  ],
+  "enrichment": {
+    "status": "complete",
+    "sources": [
+      "npm",
+      "osv",
+      "github-advisory-manual",
+      "cisa-kev-manual",
+      "web-query"
+    ],
+    "results": [
+      {
+        "findingId": "manifest-new-entrypoint",
+        "status": "complete",
+        "indicators": {
+          "domains": [
+            "ci.yml"
+          ],
+          "packages": [],
+          "hashes": [],
+          "ruleIds": [
+            "manifest-new-entrypoint"
+          ]
+        },
+        "sources": [
+          {
+            "name": "web-query",
+            "url": "ci.yml",
+            "status": "queued",
+            "summary": "Search reputable sources for ci.yml"
+          }
+        ]
+      },
+      {
+        "findingId": "manifest-new-entrypoint",
+        "status": "complete",
+        "indicators": {
+          "domains": [
+            "release.yml"
+          ],
+          "packages": [],
+          "hashes": [],
+          "ruleIds": [
+            "manifest-new-entrypoint"
+          ]
+        },
+        "sources": [
+          {
+            "name": "web-query",
+            "url": "release.yml",
+            "status": "queued",
+            "summary": "Search reputable sources for release.yml"
+          }
+        ]
+      },
+      {
+        "findingId": "pack-obfuscated-file",
+        "status": "complete",
+        "indicators": {
+          "domains": [
+            "README.md"
+          ],
+          "packages": [
+            "includes"
+          ],
+          "hashes": [],
+          "ruleIds": [
+            "pack-obfuscated-file"
+          ]
+        },
+        "sources": [
+          {
+            "name": "npm",
+            "url": "https://registry.npmjs.org/includes",
+            "status": "complete",
+            "summary": "npm package includes latest=0.0.7 versions=8"
+          },
+          {
+            "name": "osv",
+            "url": "https://api.osv.dev/v1/query",
+            "status": "complete",
+            "summary": "OSV vulnerabilities: 0"
+          },
+          {
+            "name": "web-query",
+            "url": "README.md",
+            "status": "queued",
+            "summary": "Search reputable sources for README.md"
+          }
+        ]
+      },
+      {
+        "findingId": "pack-obfuscated-file",
+        "status": "complete",
+        "indicators": {
+          "domains": [],
+          "packages": [
+            "includes"
+          ],
+          "hashes": [],
+          "ruleIds": [
+            "pack-obfuscated-file"
+          ]
+        },
+        "sources": [
+          {
+            "name": "npm",
+            "url": "https://registry.npmjs.org/includes",
+            "status": "complete",
+            "summary": "npm package includes latest=0.0.7 versions=8"
+          },
+          {
+            "name": "osv",
+            "url": "https://api.osv.dev/v1/query",
+            "status": "complete",
+            "summary": "OSV vulnerabilities: 0"
+          }
+        ]
+      },
+      {
+        "findingId": "pack-obfuscated-file",
+        "status": "complete",
+        "indicators": {
+          "domains": [],
+          "packages": [
+            "includes"
+          ],
+          "hashes": [],
+          "ruleIds": [
+            "pack-obfuscated-file"
+          ]
+        },
+        "sources": [
+          {
+            "name": "npm",
+            "url": "https://registry.npmjs.org/includes",
+            "status": "complete",
+            "summary": "npm package includes latest=0.0.7 versions=8"
+          },
+          {
+            "name": "osv",
+            "url": "https://api.osv.dev/v1/query",
+            "status": "complete",
+            "summary": "OSV vulnerabilities: 0"
+          }
+        ]
+      },
+      {
+        "findingId": "pack-obfuscated-file",
+        "status": "complete",
+        "indicators": {
+          "domains": [],
+          "packages": [
+            "includes"
+          ],
+          "hashes": [],
+          "ruleIds": [
+            "pack-obfuscated-file"
+          ]
+        },
+        "sources": [
+          {
+            "name": "npm",
+            "url": "https://registry.npmjs.org/includes",
+            "status": "complete",
+            "summary": "npm package includes latest=0.0.7 versions=8"
+          },
+          {
+            "name": "osv",
+            "url": "https://api.osv.dev/v1/query",
+            "status": "complete",
+            "summary": "OSV vulnerabilities: 0"
+          }
+        ]
+      },
+      {
+        "findingId": "pack-obfuscated-file",
+        "status": "complete",
+        "indicators": {
+          "domains": [
+            "SKILL.md"
+          ],
+          "packages": [
+            "includes"
+          ],
+          "hashes": [],
+          "ruleIds": [
+            "pack-obfuscated-file"
+          ]
+        },
+        "sources": [
+          {
+            "name": "npm",
+            "url": "https://registry.npmjs.org/includes",
+            "status": "complete",
+            "summary": "npm package includes latest=0.0.7 versions=8"
+          },
+          {
+            "name": "osv",
+            "url": "https://api.osv.dev/v1/query",
+            "status": "complete",
+            "summary": "OSV vulnerabilities: 0"
+          },
+          {
+            "name": "web-query",
+            "url": "SKILL.md",
+            "status": "queued",
+            "summary": "Search reputable sources for SKILL.md"
+          }
+        ]
+      }
+    ],
+    "errors": []
+  },
+  "recommendedActions": [
+    "Do not run build, dev, test, or CI commands until the blocked findings are reviewed.",
+    "Preserve the report and suspicious files before cleanup."
+  ],
+  "suppressedFindings": []
+}

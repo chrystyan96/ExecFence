@@ -1,0 +1,22 @@
+{
+  "findingId": "hidden-node-require-loader",
+  "status": "complete",
+  "indicators": {
+    "domains": [
+      "article.md"
+    ],
+    "packages": [],
+    "hashes": [],
+    "ruleIds": [
+      "hidden-node-require-loader"
+    ]
+  },
+  "sources": [
+    {
+      "name": "web-query",
+      "url": "article.md",
+      "status": "queued",
+      "summary": "Search reputable sources for article.md"
+    }
+  ]
+}

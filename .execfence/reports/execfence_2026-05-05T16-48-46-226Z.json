@@ -1,0 +1,410 @@
+{
+  "metadata": {
+    "schemaVersion": 2,
+    "reportId": "execfence_2026-05-05T16-48-46-226Z",
+    "generatedAt": "2026-05-05T16:48:46.226Z",
+    "tool": "ExecFence",
+    "packageName": "execfence",
+    "packageVersion": "3.1.0",
+    "cwd": "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails",
+    "projectName": "execfence",
+    "gitBranch": "codex/windows-lolbin-lifecycle-detection",
+    "gitCommit": "db8aa97178827c01262f7897070477dc5daae374",
+    "platform": "win32",
+    "arch": "x64",
+    "nodeVersion": "v25.9.0",
+    "hostname": "LAPTOP-1PMVJFRM"
+  },
+  "command": {
+    "display": "npm run pr:check",
+    "argv": [
+      "npm",
+      "run",
+      "pr:check"
+    ],
+    "shell": false
+  },
+  "runtimeTrace": {
+    "command": [
+      "npm",
+      "run",
+      "pr:check"
+    ],
+    "display": "npm run pr:check",
+    "cwd": "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails",
+    "startedAt": "2026-05-05T16:48:29.931Z",
+    "environment": {},
+    "preflightOk": true,
+    "blocked": false,
+    "before": {
+      "gitStatus": "M CHANGELOG.md\n M README.md\n M docs/README.md\n M docs/article.md\n M docs/detection.md\n M lib/explain.js\n M lib/report.js\n M lib/scanner.js\n M package.json\n M test/scanner.test.js\n?? .omx/\n?? docs/release-cadence.md",
+      "changedFiles": [
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\CHANGELOG.md",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\README.md",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\docs\\README.md",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\docs\\article.md",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\docs\\detection.md",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\lib\\explain.js",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\lib\\report.js",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\lib\\scanner.js",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\package.json",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\test\\scanner.test.js",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\.omx",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\docs\\release-cadence.md"
+      ],
+      "snapshot": {
+        "files": 72
+      }
+    },
+    "sandbox": null,
+    "finishedAt": "2026-05-05T16:48:46.054Z",
+    "durationMs": 16123,
+    "exitCode": 0,
+    "signal": null,
+    "error": null,
+    "rootProcess": {
+      "command": "C:\\WINDOWS\\system32\\cmd.exe",
+      "args": [
+        "/d",
+        "/s",
+        "/c",
+        "C:\\nvm4w\\nodejs\\npm.cmd run pr:check"
+      ],
+      "pid": 13908
+    },
+    "after": {
+      "gitStatus": "M CHANGELOG.md\n M README.md\n M docs/README.md\n M docs/article.md\n M docs/detection.md\n M lib/explain.js\n M lib/report.js\n M lib/scanner.js\n M package.json\n M test/scanner.test.js\n?? .omx/\n?? docs/release-cadence.md",
+      "changedFiles": [
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\CHANGELOG.md",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\README.md",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\docs\\README.md",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\docs\\article.md",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\docs\\detection.md",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\lib\\explain.js",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\lib\\report.js",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\lib\\scanner.js",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\package.json",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\test\\scanner.test.js",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\.omx",
+        "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\docs\\release-cadence.md"
+      ],
+      "changedAfter": [],
+      "fileChanges": {
+        "created": [],
+        "modified": [],
+        "deleted": [],
+        "renamed": [],
+        "summary": {
+          "created": 0,
+          "modified": 0,
+          "deleted": 0,
+          "renamed": 0
+        }
+      }
+    },
+    "artifacts": [],
+    "newExecutableArtifacts": [],
+    "localTools": [
+      {
+        "name": "powershell.exe",
+        "available": true
+      },
+      {
+        "name": "wmic.exe",
+        "available": false
+      }
+    ],
+    "postflightOk": true
+  },
+  "sandbox": null,
+  "config": {
+    "configPath": null,
+    "baselinePath": null,
+    "policyPack": "baseline",
+    "mode": "run",
+    "blockSeverities": [
+      "critical",
+      "high"
+    ],
+    "warnSeverities": [
+      "medium",
+      "low"
+    ],
+    "roots": [
+      "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\scripts",
+      "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails\\.github"
+    ],
+    "reportsDir": ".execfence/reports",
+    "analysis": {
+      "webEnrichment": {
+        "enabled": false,
+        "maxQueriesPerFinding": 3,
+        "allowedDomains": []
+      }
+    }
+  },
+  "summary": {
+    "ok": true,
+    "totalFindings": 0,
+    "blockedFindings": 0,
+    "warningFindings": 0,
+    "suppressedFindings": 0
+  },
+  "manifest": {
+    "schemaVersion": 2,
+    "generatedAt": "2026-05-05T16:48:46.365Z",
+    "cwd": "C:\\Users\\Chrystyan\\.gemini\\antigravity\\scratch\\security-guardrails",
+    "entrypoints": [
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: node bin/execfence.js ci",
+        "command": "node bin/execfence.js ci",
+        "guarded": true,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: node bin/execfence.js ci",
+        "guard": "execfence"
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: node bin/execfence.js manifest",
+        "command": "node bin/execfence.js manifest",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: node bin/execfence.js manifest",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: node bin/execfence.js pack-audit",
+        "command": "node bin/execfence.js pack-audit",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: node bin/execfence.js pack-audit",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: node bin/execfence.js run -- npm test",
+        "command": "node bin/execfence.js run -- npm test",
+        "guarded": true,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: node bin/execfence.js run -- npm test",
+        "guard": "execfence"
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "command": "node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "guarded": true,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "guard": "execfence"
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: npm ci",
+        "command": "npm ci",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: npm ci",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: npm pack --dry-run",
+        "command": "npm pack --dry-run",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: npm pack --dry-run",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: npm run scan",
+        "command": "npm run scan",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: npm run scan",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/ci.yml",
+        "name": "- run: npm test",
+        "command": "npm test",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/ci.yml:- run: npm test",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node bin/execfence.js ci",
+        "command": "node bin/execfence.js ci",
+        "guarded": true,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node bin/execfence.js ci",
+        "guard": "execfence"
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node bin/execfence.js manifest",
+        "command": "node bin/execfence.js manifest",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node bin/execfence.js manifest",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node bin/execfence.js pack-audit",
+        "command": "node bin/execfence.js pack-audit",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node bin/execfence.js pack-audit",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node bin/execfence.js run -- npm test",
+        "command": "node bin/execfence.js run -- npm test",
+        "guarded": true,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node bin/execfence.js run -- npm test",
+        "guard": "execfence"
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "command": "node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "guarded": true,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node bin/execfence.js scan --ci --format sarif . > execfence.sarif",
+        "guard": "execfence"
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: node scripts/update-changelog.cjs",
+        "command": "node scripts/update-changelog.cjs",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: node scripts/update-changelog.cjs",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm ci",
+        "command": "npm ci",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm ci",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm install -g npm@latest",
+        "command": "npm install -g npm@latest",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm install -g npm@latest",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm publish --access public --provenance",
+        "command": "npm publish --access public --provenance",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm publish --access public --provenance",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm run scan",
+        "command": "npm run scan",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm run scan",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm test",
+        "command": "npm test",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm test",
+        "guard": null
+      },
+      {
+        "type": "github-action-run",
+        "file": ".github/workflows/release.yml",
+        "name": "- run: npm version \"${{ inputs.version }}\" --no-git-tag-version",
+        "command": "npm version \"${{ inputs.version }}\" --no-git-tag-version",
+        "guarded": false,
+        "sensitive": true,
+        "id": "github-action-run:.github/workflows/release.yml:- run: npm version \"${{ inputs.version }}\" --no-git-tag-version",
+        "guard": null
+      },
+      {
+        "type": "package-script",
+        "file": "package.json",
+        "name": "pretest",
+        "command": "npm run scan",
+        "guarded": false,
+        "sensitive": true,
+        "id": "package-script:package.json:pretest",
+        "guard": null
+      },
+      {
+        "type": "package-script",
+        "file": "package.json",
+        "name": "test",
+        "command": "node --test",
+        "guarded": false,
+        "sensitive": true,
+        "id": "package-script:package.json:test",
+        "guard": null
+      }
+    ],
+    "summary": {
+      "total": 23,
+      "guarded": 6,
+      "sensitive": 23
+    }
+  },
+  "changeRisk": {
+    "level": "low",
+    "reasons": []
+  },
+  "findings": [],
+  "enrichment": {
+    "status": "skipped",
+    "sources": [],
+    "results": [],
+    "errors": []
+  },
+  "recommendedActions": [
+    "No immediate action required."
+  ],
+  "suppressedFindings": []
+}

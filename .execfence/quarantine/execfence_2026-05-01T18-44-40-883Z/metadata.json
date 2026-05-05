@@ -1,0 +1,30 @@
+{
+  "reportId": "execfence_2026-05-01T18-44-40-883Z",
+  "createdAt": "2026-05-01T18:44:40.883Z",
+  "findings": [
+    {
+      "id": "sandbox-enforcement-unavailable",
+      "severity": "high",
+      "file": ".execfence/config/sandbox.json",
+      "line": 1,
+      "sha256": null,
+      "snippet": ""
+    }
+  ],
+  "sandbox": {
+    "mode": "enforce",
+    "profile": "test",
+    "blockedOperations": [
+      {
+        "domain": "sandbox",
+        "operation": "start command",
+        "reason": "Sandbox enforce requested but missing: filesystem enforcement helper, process tree enforcement helper, network enforcement helper"
+      }
+    ],
+    "missingCapabilities": [
+      "filesystem enforcement helper",
+      "process tree enforcement helper",
+      "network enforcement helper"
+    ]
+  }
+}

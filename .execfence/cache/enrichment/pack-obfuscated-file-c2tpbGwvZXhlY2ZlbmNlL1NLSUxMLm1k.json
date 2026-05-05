@@ -1,0 +1,36 @@
+{
+  "findingId": "pack-obfuscated-file",
+  "status": "complete",
+  "indicators": {
+    "domains": [
+      "SKILL.md"
+    ],
+    "packages": [
+      "includes"
+    ],
+    "hashes": [],
+    "ruleIds": [
+      "pack-obfuscated-file"
+    ]
+  },
+  "sources": [
+    {
+      "name": "npm",
+      "url": "https://registry.npmjs.org/includes",
+      "status": "complete",
+      "summary": "npm package includes latest=0.0.7 versions=8"
+    },
+    {
+      "name": "osv",
+      "url": "https://api.osv.dev/v1/query",
+      "status": "complete",
+      "summary": "OSV vulnerabilities: 0"
+    },
+    {
+      "name": "web-query",
+      "url": "SKILL.md",
+      "status": "queued",
+      "summary": "Search reputable sources for SKILL.md"
+    }
+  ]
+}
