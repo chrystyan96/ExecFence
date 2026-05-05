@@ -22,6 +22,8 @@ Background reading:
 
 ExecFence does not replace antivirus, EDR, dependency review, secret scanning, or SCA. It adds a local fence at the moment suspicious repository content would become active: before `test`, `build`, `dev`, `pack`, `publish`, CI, or agent-driven execution.
 
+Current detection coverage includes injected JavaScript loader markers, suspicious executable configs, folder-open editor tasks, risky GitHub Actions, unexpected binaries or archives, lockfile source risk, and npm lifecycle scripts that download, evaluate, pipe to shells, or launch Windows LOLBins such as `bitsadmin`, `mshta`, `rundll32`, and `regsvr32`.
+
 ## Two Ways To Use ExecFence
 
 ExecFence has two installation/use paths. They are related, but they do not do the same thing.
@@ -247,5 +249,6 @@ Baselines are meant for reviewed exceptions, not for forcing a build through unk
 
 - Project overview and launch article: [GitHub Pages](https://chrystyan96.github.io/ExecFence/)
 - Technical detection details: [Detection Model](https://chrystyan96.github.io/ExecFence/detection)
+- Weekly release cadence: [docs/release-cadence.md](docs/release-cadence.md)
 - Source documentation: [docs/](docs/)
 - License: [Apache-2.0](LICENSE)

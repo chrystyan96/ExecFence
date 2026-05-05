@@ -100,7 +100,7 @@ ExecFence is designed for:
 - injected JavaScript loaders in project files
 - suspicious build or config files that execute during dev/build/test
 - `.vscode/tasks.json` folder-open autostart behavior
-- npm/pnpm/yarn/bun lifecycle scripts with download/eval/shell behavior
+- npm/pnpm/yarn/bun lifecycle scripts with download/eval/shell behavior or Windows LOLBins such as `bitsadmin`, `mshta`, `rundll32`, and `regsvr32`
 - suspicious package manager lockfile sources
 - unexpected executables and archives in source or build-input folders
 - new or modified execution entrypoints
@@ -452,6 +452,10 @@ jobs:
 ```
 
 Use pinned action SHAs and least-privilege workflow permissions. Avoid `pull_request_target` for untrusted code unless the workflow is designed specifically for that risk.
+
+## Release Cadence
+
+ExecFence follows a weekly SemVer release cadence with planning checkpoints on Tuesday and Thursday and release readiness on Friday afternoon. The operational checklist lives in [Weekly Release Cadence](release-cadence.md).
 
 ## Design Principles
 

