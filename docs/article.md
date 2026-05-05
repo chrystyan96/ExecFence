@@ -298,7 +298,7 @@ It skips normal generated or dependency directories such as `.git`, `node_module
 
 ## How Detection Works
 
-ExecFence combines exact IoC matching, project/team regex signatures, suspicious loader heuristics, lifecycle-script audit, lockfile source review, executable/archive detection, workflow hardening checks, and agent/MCP surface audit.
+ExecFence combines exact IoC matching, project/team regex signatures, suspicious loader heuristics, lifecycle-script audit, lockfile source review, executable/archive detection, workflow hardening checks, and agent/MCP surface audit. The lifecycle audit covers install-time download/eval chains, pipe-to-shell behavior, hidden PowerShell, and Windows LOLBins or script hosts such as `bitsadmin`, `mshta`, `rundll32`, and `regsvr32`.
 
 The important design choice is scope: rules are weighted toward files that execute during development, build, test, CI, package, publish, IDE, or agent workflows. ExecFence is not trying to lint every source file; it is trying to catch suspicious code where a normal command can activate it.
 

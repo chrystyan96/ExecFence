@@ -78,6 +78,7 @@ ExecFence looks for risky behavior such as:
 - hidden PowerShell
 - `curl` or `wget` execution chains
 - eval-style execution
+- Windows LOLBins and script hosts such as `bitsadmin`, `Start-BitsTransfer`, `mshta`, `rundll32`, and `regsvr32`
 - suspicious binary launch paths
 - install hooks in local packages/workspaces
 

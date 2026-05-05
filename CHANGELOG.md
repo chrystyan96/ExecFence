@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Expanded package lifecycle script detection to flag Windows LOLBins and script hosts such as `bitsadmin`, `Start-BitsTransfer`, `mshta`, `rundll32`, and `regsvr32`.
+
 ## v3.1.0 - 2026-05-01
 
 - Added `execfence guard status|plan|enable|disable|global-status|global-enable` for dry-run-first automatic project guardrail setup.
