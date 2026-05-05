@@ -1,0 +1,62 @@
+{
+  "reportId": "execfence_2026-05-01T18-23-38-022Z",
+  "createdAt": "2026-05-01T18:23:38.022Z",
+  "findings": [
+    {
+      "id": "manifest-new-entrypoint",
+      "severity": "high",
+      "file": ".github/workflows/ci.yml",
+      "line": 1,
+      "sha256": "fd937b7d277eb8291a1272b5733a200162bcb3661bfeae979ac3e2f7d4b6c1a7",
+      "snippet": "1: name: CI\n2: \n3: on:"
+    },
+    {
+      "id": "manifest-new-entrypoint",
+      "severity": "high",
+      "file": ".github/workflows/release.yml",
+      "line": 1,
+      "sha256": "123b3de2ae2e988e68db7fe908ccec919c73af744e8d371003b47ecb7884eb8a",
+      "snippet": "1: name: Release\n2: \n3: on:"
+    },
+    {
+      "id": "pack-obfuscated-file",
+      "severity": "high",
+      "file": "README.md",
+      "line": 1,
+      "sha256": "8c27849c330aba74199d1f2c9380c3b8ec263da850a69eebaf3af17f07afcf38",
+      "snippet": "1: # ExecFence\n2: \n3: Execution-fence guardrails for persistent web, desktop, backend, and local-agent projects."
+    },
+    {
+      "id": "pack-obfuscated-file",
+      "severity": "high",
+      "file": "lib/scanner.js",
+      "line": 1,
+      "sha256": "96eede1b8e7a6481c42173a155b43ca8feb1f2f3bf86c71a6834ff253377317a",
+      "snippet": "1: 'use strict';\n2: \n3: const fs = require('node:fs');"
+    },
+    {
+      "id": "pack-obfuscated-file",
+      "severity": "high",
+      "file": "lib/signatures.js",
+      "line": 1,
+      "sha256": "8e0887b43a5e798a9081272c9b2c20dcd193dcc7ecc94bffdfadb2ca1b0243d5",
+      "snippet": "1: 'use strict';\n2: \n3: const exactSignatures = ["
+    },
+    {
+      "id": "pack-obfuscated-file",
+      "severity": "high",
+      "file": "lib/supply-chain.js",
+      "line": 1,
+      "sha256": "731b679bd5f756ecc9253dfee504208a33ce857ae07b79b93fb8630cf531c43e",
+      "snippet": "1: 'use strict';\n2: \n3: const fs = require('node:fs');"
+    },
+    {
+      "id": "pack-obfuscated-file",
+      "severity": "high",
+      "file": "skill/execfence/SKILL.md",
+      "line": 1,
+      "sha256": "7427b0d61b9298302d7bcc2e725868bc4412509413625314af1e9b39a6e8c438",
+      "snippet": "1: ---\n2: name: execfence\n3: description: Use when creating or hardening persistent projects that run on the web, build executable code, use Node/Go/Rust/Python supply chains, run CI/CD, or access the user's filesystem, credentials, browser, network, shell, desktop API"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "reportId": "execfence_2026-05-01T18-25-12-543Z",
+  "createdAt": "2026-05-01T18:25:12.543Z",
+  "findings": [
+    {
+      "id": "void-dokkaebi-loader-marker",
+      "severity": "high",
+      "file": "tailwind.config.js",
+      "line": 2,
+      "sha256": null,
+      "snippet": ""
+    }
+  ]
+}
