@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v4.0.1 - 2026-05-06
+
+- Kept the release workflow compatible with branch protection by requiring version metadata to be updated in a PR before publishing, then publishing and tagging without pushing release metadata back to `master`.
+
+## v4.0.0 - 2026-05-06
+
 - Improved `execfence --help` and `execfence help` with grouped public command descriptions while keeping bare `execfence` as the default scan command.
 - Changed `execfence guard global-enable` to install reversible npm/pnpm/yarn shims and marked shell-profile PATH blocks, so terminal and agent-run package-manager commands preflight through ExecFence before the real tool starts.
 - Added `execfence guard global-disable` to remove global package-manager shims and PATH profile blocks while preserving evidence and project configuration.

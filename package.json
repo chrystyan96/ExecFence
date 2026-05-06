@@ -1,6 +1,6 @@
 {
   "name": "execfence",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "Guard npm/pnpm/yarn/Bun installs, dependency changes, CI, and agent-run commands before suspicious project code executes.",
   "license": "Apache-2.0",
   "author": "Chrystyan Byrnes",
