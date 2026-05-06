@@ -1,8 +1,18 @@
 # ExecFence
 
-ExecFence is a local execution guardrail for projects that run code during development, build, test, CI, packaging, publishing, or agent workflows.
+ExecFence is a local execution and supply-chain guardrail for JavaScript projects, CI, and coding agents. It intercepts risky project commands before they run, audits dependency changes, and blocks common npm supply-chain execution paths such as lifecycle scripts, suspicious package artifacts, and unguarded package-manager surfaces.
 
-It was created for a specific failure mode: a repository looks like normal source code, but contains injected code, suspicious scripts, task files, package hooks, binaries, archives, or agent/tool configuration that can execute when a developer or coding agent runs an ordinary command.
+Version 4 adds a global package-manager guard for `npm`, `npx`, `pnpm`, `yarn`, `yarnpkg`, `bun`, and `bunx`. After `execfence guard global-enable`, terminal commands and agent-run package-manager commands pass through ExecFence shims first. Install-like commands run with lifecycle scripts disabled, while script-running commands keep their primary semantics after a preflight scan.
+
+It was created for a specific failure mode: a repository or dependency update looks normal, but contains injected code, suspicious scripts, task files, package hooks, binaries, archives, compromised package artifacts, or agent/tool configuration that can execute when a developer or coding agent runs an ordinary command.
+
+Key controls:
+
+- global npm/pnpm/yarn/Bun shims with recursion-safe delegation to the real package manager
+- lifecycle-script suppression for install-like commands
+- `deps review` for package metadata, OSV reputation, integrity, provenance hints, tarball content, and tarball delta against the previous version
+- `supplyChain.mode: "strict"` for CI/release workflows that should block unavailable signals, missing integrity/provenance, cooldown windows, and uncovered package-manager execution paths
+- runtime dependency behavior evidence with helper-backed enforcement for network, sensitive file reads, child processes, and new executable/archive creation
 
 Full documentation: [chrystyan96.github.io/ExecFence](https://chrystyan96.github.io/ExecFence/)
 

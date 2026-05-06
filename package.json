@@ -1,7 +1,7 @@
 {
   "name": "execfence",
   "version": "4.0.0",
-  "description": "ExecFence automatically guards build, dev, test, CI, and agent execution against suspicious project code.",
+  "description": "Guard npm/pnpm/yarn/Bun installs, dependency changes, CI, and agent-run commands before suspicious project code executes.",
   "license": "Apache-2.0",
   "author": "Chrystyan Byrnes",
   "type": "commonjs",
