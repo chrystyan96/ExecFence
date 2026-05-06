@@ -56,6 +56,31 @@ Use the `codex/` branch prefix for agent-created branches unless a task specifie
 
 Planning automations should not create branches or pull requests by themselves. They must include a suggested branch name, PR title, and PR body outline so the implementation step can finish with a branch and PR.
 
+## Automation Runtime Profiles
+
+Use these Codex automation profiles for the weekly planning cadence:
+
+| Automation | Model | Reasoning effort |
+| --- | --- | --- |
+| `execfence-tuesday-detection-pr-plan` | `gpt-5.5` | `medium` |
+| `execfence-thursday-stabilization-pr-plan` | `gpt-5.5` | `high` |
+| `execfence-friday-weekly-release-readiness` | `gpt-5.5` | `xhigh` |
+
+## Automation Priority Order
+
+Automations must evaluate and rank work in this priority order before proposing a PR or release:
+
+1. Security and release blockers: failing tests, failing scans, failing ExecFence CI, failing package audit, incorrect SemVer, missing required docs, missing changelog, or any risk of publishing an inconsistent release.
+2. Detection and guardrails: new rules, signatures, fixtures, low-noise false-positive handling, clearer finding explanations, and protection for workflows, scripts, and agents.
+3. User-visible impact: commands, workflows, CLI UX, messages, reports, config, schemas, skills, agent rules, or anything that changes how users understand or use the project.
+4. README and required documentation: `README.md` review, detection docs when detection changes, GitHub Pages/docs for important workflow or concept changes, npm metadata when positioning or central capability changes.
+5. Tests and evidence: expected tests, exact verification commands, and evidence needed to prove the update is ready.
+6. Branch and PR: suggested `codex/...` branch, PR title, and PR body outline.
+7. Release and SemVer: `patch`, `minor`, `major`, or "no release", with Friday consolidating changelog, release notes, blockers, and readiness.
+8. Platform and maintenance: CI, compatibility, schemas, cleanup, documentation polish, and internal improvements, unless they are blockers above.
+
+Automation output must order proposals and blockers by this priority. Friday release readiness must not mark a release ready if any blocker exists in priorities 1, 4, or 5.
+
 ## Checkpoints
 
 Use the Tuesday checkpoint to pick the smallest detection-first PR that can be reviewed and verified quickly. Good candidates include a new suspicious fixture, a cleaner finding explanation, a low-noise signature, a report field improvement, or a guardrail coverage gap.
