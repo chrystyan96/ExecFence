@@ -43,7 +43,13 @@
       "additionalProperties": true,
       "properties": {
         "path": { "type": "string" },
-        "requiredForEnforce": { "type": "boolean" }
+        "requiredForEnforce": { "type": "boolean" },
+        "requiredCapabilities": {
+          "type": "array",
+          "items": {
+            "enum": ["filesystem", "sensitiveReads", "process", "childProcesses", "network", "newExecutables"]
+          }
+        }
       }
     }
   }

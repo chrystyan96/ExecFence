@@ -305,14 +305,17 @@ npx --yes execfence guard status
 
 `coverage` finds execution entrypoints that are not protected by `execfence run` or equivalent guardrails. `wire` suggests or applies wrappers.
 
-`guard` is the automatic project mode. It runs `init`, checks coverage, applies wiring, installs project-local agent rules, and summarizes remaining gaps. Global guard mode is intentionally non-invasive:
+`guard` is the automatic project mode. It runs `init`, checks coverage, applies wiring, installs project-local agent rules, and summarizes remaining gaps. Global guard mode installs reversible package-manager shims:
 
 ```sh
 npx --yes execfence guard global-status
 npx --yes execfence guard global-enable
+npx --yes execfence guard global-disable
 ```
 
-It installs skill/defaults and global agent rules only. It does not alter PATH, aliases, shims, shell profiles, or globally intercept package-manager commands.
+It installs skill/defaults, global agent rules, and `npm`/`npx`/`pnpm`/`yarn`/`yarnpkg`/`bun`/`bunx` shims under `<home>/.execfence/shims/`. Marked shell-profile blocks put that directory before the real package managers in PATH, so terminal commands and agent-run commands pass through ExecFence first. `global-disable` removes the shims and marked profile blocks without deleting reports, config, trust stores, cache, or quarantine metadata.
+
+Install-like commands such as `npm install`, `pnpm add`, `yarn install`, `bun add`, `ci`, `update`, and `rebuild` run after a clean preflight scan and guarded dependency review. npm and Bun use `--ignore-scripts=true`, pnpm uses `--ignore-scripts`, Yarn 1 uses `--ignore-scripts=true`, and Yarn 2+ runs with `YARN_ENABLE_SCRIPTS=0`. Commands that intentionally run scripts, such as `run`, `test`, `start`, `pack`, and `publish`, keep normal package-manager behavior after the scan passes.
 
 ### Manifest
 
@@ -327,12 +330,70 @@ The manifest records execution surfaces such as package scripts, Makefiles, work
 
 ```sh
 npx --yes execfence deps diff
+npx --yes execfence deps review
+npx --yes execfence deps review --base-ref main --package-manager yarn
+npx --yes execfence deps review --format json
 npx --yes execfence pack-audit
 npx --yes execfence trust add tools/reviewed-helper.exe --reason "reviewed helper" --owner security --expires-at 2027-01-01
 npx --yes execfence trust audit
 ```
 
-These commands catch suspicious dependency drift, dangerous packaged files, unreviewed registries/actions/package scopes, and changed trusted artifacts.
+These commands catch suspicious dependency drift, dangerous packaged files, unreviewed registries/actions/package scopes, and changed trusted artifacts. `deps review` aggregates `package-lock.json`, `pnpm-lock.yaml`, and `yarn.lock`, then adds guarded npm metadata and reputation for new or changed packages: release cooldown, deprecation/security messaging, registry/source, integrity, provenance/signature hints, OSV advisory records, lifecycle/bin hints, and recommended actions.
+
+Metadata and reputation lookup is deliberately privacy-safe by default. It only queries allowlisted public registries, skips scoped packages unless `supplyChain.metadata.allowedPublicScopes` allows the scope, never uses npm tokens or `.npmrc` auth, caches under `.execfence/cache/`, caps packages per run, and treats network failure as a warning unless configured otherwise. The review also checks package age, recent metadata changes, maintainer presence, integrity, provenance/signature hints, package tarball content, and tarball delta against the previous resolved version when available.
+
+Strict supply-chain mode is available for CI, release, or security-sensitive repositories:
+
+```json
+{
+  "supplyChain": {
+    "mode": "strict"
+  }
+}
+```
+
+`strict` blocks unavailable metadata/reputation/tarball signals, missing integrity/provenance signals, release cooldowns, new package age windows, uncovered package-manager surfaces, and dependency runtime audits without helper-backed containment.
+
+For runtime-only dependency risk, attach changed-dependency review and sandbox containment status to a command:
+
+```sh
+npx --yes execfence run --dependency-behavior-audit --sandbox-mode audit -- npm test
+```
+
+This does not prove library code safe, but it records whether a test/build/start command that may import changed dependencies ran with network/process/filesystem containment or with degraded local enforcement. Runtime behavior risk is closed only when `--sandbox` uses a verified helper that declares outbound network blocking, sensitive path reads, child-process supervision, and new executable/archive blocking; `--sandbox-mode audit` is evidence, not prevention.
+
+### When Dependency Metadata Blocks Or Warns
+
+Start with the report and the dependency review:
+
+```sh
+npx --yes execfence reports latest
+npx --yes execfence deps review --format json
+```
+
+A block usually means ExecFence received a strong registry signal, such as a release inside the configured cooldown or security-relevant deprecation text. A warning means the package still needs review but the default policy is fail-open, for example because the registry was unreachable. Do not bypass with a private registry allowlist or public-scope allowlist unless sending those package names to that registry is acceptable for the project.
+
+### Re-enable Lifecycle Scripts Safely
+
+The global guard suppresses lifecycle scripts during install-like commands because recent npm attacks often used `preinstall`, `install`, or `postinstall`. If a package genuinely needs lifecycle scripts:
+
+```sh
+npx --yes execfence deps review
+npx --yes execfence pack-audit
+npx --yes execfence run --dependency-behavior-audit --sandbox-mode audit -- npm rebuild <package>
+```
+
+Review the package version, source, integrity, release age, and package contents first. Prefer a targeted rebuild or reviewed package script over rerunning a full install with scripts enabled.
+
+### Token Theft Response
+
+If ExecFence blocks a dependency or lifecycle payload that may have run before the guard was enabled:
+
+1. Preserve `.execfence/reports/` and create an incident bundle.
+2. Rotate npm, GitHub, cloud, CI, SSH, and package-publishing tokens that were reachable from the machine or runner.
+3. Purge local and CI package caches before reinstalling.
+4. Review new workflow files, package scripts, agent tool configs, and changed lockfiles with `agent-report`, `manifest diff`, and `deps review`.
+5. Pin, downgrade, or remove the affected packages before re-enabling installs.
 
 ### Reports And Incidents
 
@@ -399,11 +460,17 @@ When active, the skill should make the agent:
 ## What To Do When ExecFence Blocks
 
 1. Do not rerun the blocked project command outside ExecFence.
-2. Open the newest report:
+2. Open the newest report. If the block came from global npm guard, keep the guard enabled while reviewing:
 
    ```sh
    npx --yes execfence reports latest
    npx --yes execfence reports open <report>
+   ```
+
+   Disable global npm interception only when intentionally leaving guarded execution:
+
+   ```sh
+   npx --yes execfence guard global-disable
    ```
 
 3. Preserve suspicious files and the report.

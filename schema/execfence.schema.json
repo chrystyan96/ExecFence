@@ -195,6 +195,67 @@
         "detectTyposquatting": { "type": "boolean", "default": true }
       }
     },
+    "supplyChain": {
+      "description": "Guarded supply-chain metadata and dependency review settings.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "enum": ["audit", "guarded", "strict"], "default": "guarded" },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "mode": { "enum": ["guarded", "audit", "off"], "default": "guarded" },
+            "allowedRegistries": {
+              "type": "array",
+              "items": { "type": "string" },
+              "default": ["registry.npmjs.org"]
+            },
+            "allowedPublicScopes": {
+              "type": "array",
+              "items": { "type": "string", "pattern": "^@[^/]+$" },
+              "default": []
+            },
+            "releaseCooldownHours": { "type": "integer", "minimum": 0, "default": 48 },
+            "maxPackagesPerRun": { "type": "integer", "minimum": 0, "default": 20 },
+            "timeoutMs": { "type": "integer", "minimum": 100, "default": 2500 },
+            "cacheTtlMs": { "type": "integer", "minimum": 0, "default": 86400000 },
+            "networkFailure": { "enum": ["warn", "block"], "default": "warn" },
+            "privateScopePolicy": { "enum": ["skip", "allow"], "default": "skip" },
+            "packageAgeMinimumDays": { "type": "integer", "minimum": 0, "default": 7 },
+            "packageModifiedCooldownHours": { "type": "integer", "minimum": 0, "default": 24 },
+            "provenancePolicy": { "enum": ["off", "warn", "block"], "default": "warn" },
+            "requireIntegrity": { "type": "boolean", "default": true },
+            "tarballReview": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": { "type": "boolean", "default": true },
+                "maxBytes": { "type": "integer", "minimum": 1024, "default": 5242880 },
+                "networkFailure": { "enum": ["warn", "block"], "default": "warn" }
+              }
+            }
+          }
+        },
+        "reputation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "sources": {
+              "type": "array",
+              "items": { "enum": ["npm", "osv", "github-advisory"] },
+              "default": ["npm", "osv", "github-advisory"]
+            },
+            "cacheTtlMs": { "type": "integer", "minimum": 0, "default": 86400000 },
+            "timeoutMs": { "type": "integer", "minimum": 100, "default": 2500 },
+            "networkFailure": { "enum": ["warn", "block"], "default": "warn" },
+            "maxPackagesPerRun": { "type": "integer", "minimum": 0, "default": 20 }
+          }
+        }
+      }
+    },
     "adopt": {
       "description": "Low-noise first-run adoption settings.",
       "type": "object",

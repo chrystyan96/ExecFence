@@ -102,6 +102,35 @@ test('runtime gate can record artifacts and deny new executable outputs', () => 
   assert.ok(result.runtimeTrace.artifacts.some((artifact) => artifact.file === 'payload.exe' && artifact.suspicious));
 });
 
+test('runtime dependency behavior audit records containment gaps for changed deps', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-run-dep-behavior-'));
+  git(root, ['init']);
+  git(root, ['config', 'user.email', 'test@example.com']);
+  git(root, ['config', 'user.name', 'Test']);
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'dep-behavior' }, null, 2));
+  fs.writeFileSync(path.join(root, 'package-lock.json'), JSON.stringify({ lockfileVersion: 3, packages: { '': { name: 'dep-behavior' } } }, null, 2));
+  git(root, ['add', '.']);
+  git(root, ['commit', '-m', 'initial']);
+  fs.writeFileSync(path.join(root, 'package-lock.json'), JSON.stringify({
+    lockfileVersion: 3,
+    packages: {
+      '': { name: 'dep-behavior' },
+      'node_modules/left-pad': { version: '1.3.0', resolved: 'https://registry.npmjs.org/left-pad/-/left-pad-1.3.0.tgz', integrity: 'sha512-left' },
+    },
+  }, null, 2));
+
+  const result = runWithFence([process.execPath, '-e', 'console.log("ok")'], {
+    cwd: root,
+    stdio: 'pipe',
+    dependencyBehaviorAudit: true,
+    supplyChain: { metadata: { enabled: false } },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.runtimeTrace.dependencyBehavior.reviewedDependencies, 1);
+  assert.ok(result.findings.some((finding) => finding.id === 'dependency-runtime-containment-missing'));
+});
+
 test('execution manifest records entrypoints and diffs new sensitive scripts', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-manifest-'));
   fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({
@@ -279,6 +308,21 @@ test('ci command aggregates scan, manifest, deps, pack, and trust checks', () =>
   assert.ok(result.ci.scan);
   assert.ok(result.ci.manifestDiff);
   assert.ok(result.findings.some((finding) => finding.id === 'manifest-new-entrypoint'));
+});
+
+test('ci strict supply-chain mode blocks uncovered package-manager execution surfaces', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-ci-strict-'));
+  fs.mkdirSync(path.join(root, '.execfence', 'config'), { recursive: true });
+  fs.writeFileSync(path.join(root, '.execfence', 'config', 'execfence.json'), JSON.stringify({
+    supplyChain: { mode: 'strict', metadata: { enabled: false } },
+  }, null, 2));
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'strict-ci', scripts: { test: 'node --test' } }, null, 2));
+  fs.writeFileSync(path.join(root, 'bun.lock'), '');
+
+  const result = runCi(root);
+
+  assert.equal(result.ok, false);
+  assert.ok(result.findings.some((finding) => finding.id === 'supply-chain-package-manager-surface-uncovered'));
 });
 
 test('baseline helper adds report findings with owner reason expiry and hash', () => {
