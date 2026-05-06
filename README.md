@@ -19,6 +19,7 @@ Background reading:
 - Trend Micro: [Void Dokkaebi Uses Fake Job Interview Lure to Spread Malware via Code Repositories](https://www.trendmicro.com/en_us/research/26/d/void-dokkaebi-uses-fake-job-interview-lure-to-spread-malware-via-code-repositories.html)
 - Microsoft: [Contagious Interview: Malware delivered through fake developer job interviews](https://www.microsoft.com/en-us/security/blog/2026/03/11/contagious-interview-malware-delivered-through-fake-developer-job-interviews/)
 - Datadog Security Labs: [Compromised axios npm package delivers cross-platform RAT](https://securitylabs.datadoghq.com/articles/axios-npm-supply-chain-compromise/)
+- ExecFence analysis: [npm Supply Chain Assessment](https://chrystyan96.github.io/ExecFence/npm-supply-chain-assessment)
 
 ExecFence does not replace antivirus, EDR, dependency review, secret scanning, or SCA. It adds a local fence at the moment suspicious repository content would become active: before `test`, `build`, `dev`, `pack`, `publish`, CI, or agent-driven execution.
 
@@ -116,14 +117,33 @@ npx --yes execfence run --sandbox -- npm test
 
 If the requested enforcement capability is unavailable, ExecFence should block before execution and explain what is missing. It does not silently downgrade enforcement.
 
-Experimental non-invasive global setup:
+Global package-manager guard setup:
 
 ```sh
 npx --yes execfence guard global-status
 npx --yes execfence guard global-enable
+npx --yes execfence guard global-disable
 ```
 
-Global guard mode installs skill/defaults and global agent rules only. It does not alter PATH, aliases, shims, shell profiles, or intercept `npm`, `go`, `python`, `cargo`, or `make`.
+Global guard mode installs skill/defaults, global agent rules, and reversible `npm`/`npx`/`pnpm`/`yarn`/`yarnpkg` shims under `<home>/.execfence/shims/`. It adds marked shell-profile blocks so terminal commands and agent-run package-manager commands enter ExecFence before the real tool starts. `global-disable` removes the shims and profile blocks.
+
+Install-like commands such as `npm install`, `pnpm add`, `yarn install`, `ci`, `update`, and `rebuild` get a clean preflight scan, guarded dependency metadata review, and lifecycle-script suppression before delegation. npm uses `--ignore-scripts=true`, pnpm uses `--ignore-scripts`, Yarn 1 uses `--ignore-scripts=true`, and Yarn 2+ runs with `YARN_ENABLE_SCRIPTS=0`. Script-running commands such as `npm run`, `pnpm test`, `yarn start`, `pack`, and `publish` keep their primary script semantics after the scan passes.
+
+Review changed dependency versions and guarded metadata before install or CI:
+
+```sh
+npx --yes execfence deps review
+npx --yes execfence deps review --base-ref main --package-manager pnpm
+npx --yes execfence deps review --format json
+```
+
+`deps review` aggregates `package-lock.json`, `pnpm-lock.yaml`, and `yarn.lock`. Metadata checks are guarded: public npm registry lookups are limited to new or changed packages, scoped packages are skipped unless allowlisted, non-allowlisted registries are skipped, no npm tokens are used, results are cached under `.execfence/cache/`, and network failures warn by default. It also reviews package age, recent metadata changes, maintainer presence, integrity, provenance/signature hints, and package tarball contents when available.
+
+Audit runtime behavior for commands likely to import changed dependencies:
+
+```sh
+npx --yes execfence run --dependency-behavior-audit --sandbox-mode audit -- npm test
+```
 
 ## Use The Skill
 
@@ -226,7 +246,9 @@ Baselines are meant for reviewed exceptions, not for forcing a build through unk
 | Command | Purpose |
 | --- | --- |
 | `execfence scan` | Static project scan |
+| `execfence --help` / `execfence help` | Full grouped command reference |
 | `execfence run -- <command>` | Preflight scan, command execution, post-run evidence report |
+| `execfence run --dependency-behavior-audit -- <command>` | Attach changed-dependency review and containment status to runtime evidence |
 | `execfence ci` | Combined CI guardrail bundle |
 | `execfence coverage` | Detect unprotected build/dev/test entrypoints |
 | `execfence wire --dry-run` | Show wrapper changes without writing |
@@ -234,10 +256,12 @@ Baselines are meant for reviewed exceptions, not for forcing a build through unk
 | `execfence guard enable` | Show automatic project guardrail plan without writing |
 | `execfence guard enable --apply` | Apply project guardrails, wrappers, CI setup, and local agent rules |
 | `execfence guard disable` | Remove generated wrappers/rules while preserving evidence |
-| `execfence guard global-enable` | Install global skill and agent rules without shell interception |
+| `execfence guard global-enable` | Install global skill, agent rules, and reversible npm/pnpm/yarn shims |
+| `execfence guard global-disable` | Remove global npm/pnpm/yarn shims and marked PATH profile blocks |
 | `execfence manifest` | Generate execution-entrypoint manifest |
 | `execfence manifest diff` | Detect new or changed execution entrypoints |
 | `execfence deps diff` | Compare dependency/lockfile risk |
+| `execfence deps review` | Review changed npm/pnpm/yarn packages with guarded metadata checks |
 | `execfence pack-audit` | Audit package contents before publish |
 | `execfence agent-report` | Review agent, MCP, tool, and instruction-file changes |
 | `execfence reports latest` | Show the latest report |
@@ -249,6 +273,7 @@ Baselines are meant for reviewed exceptions, not for forcing a build through unk
 
 - Project overview and launch article: [GitHub Pages](https://chrystyan96.github.io/ExecFence/)
 - Technical detection details: [Detection Model](https://chrystyan96.github.io/ExecFence/detection)
+- npm incident mapping: [npm Supply Chain Assessment](https://chrystyan96.github.io/ExecFence/npm-supply-chain-assessment)
 - Weekly release cadence: [docs/release-cadence.md](docs/release-cadence.md)
 - Source documentation: [docs/](docs/)
 - License: [Apache-2.0](LICENSE)

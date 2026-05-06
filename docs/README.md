@@ -33,6 +33,8 @@ Microsoft described the Contagious Interview campaign as a long-running social e
 
 Datadog documented the 2026 axios npm compromise, where malicious releases introduced a dependency with a `postinstall` script that downloaded and ran a cross-platform RAT during install, then removed traces of the hook from disk: [Compromised axios npm package delivers cross-platform RAT](https://securitylabs.datadoghq.com/articles/axios-npm-supply-chain-compromise/).
 
+The npm-specific incident mapping lives in [npm Supply Chain Assessment](npm-supply-chain-assessment.md). It covers the 2025-05-06 through 2026-05-06 public campaign window, including lifecycle-script malware, maintainer compromise, token theft, and where ExecFence helps only partially.
+
 Those incidents share the same operational lesson: the point of execution is often mundane. A developer runs a test, opens a folder, installs dependencies, accepts an interview task, or lets CI run a script. ExecFence exists to put a reviewable fence around those moments.
 
 ## Origin Story: From Suspicious Build Output To A Product
@@ -305,14 +307,17 @@ npx --yes execfence guard status
 
 `coverage` finds execution entrypoints that are not protected by `execfence run` or equivalent guardrails. `wire` suggests or applies wrappers.
 
-`guard` is the automatic project mode. It runs `init`, checks coverage, applies wiring, installs project-local agent rules, and summarizes remaining gaps. Global guard mode is intentionally non-invasive:
+`guard` is the automatic project mode. It runs `init`, checks coverage, applies wiring, installs project-local agent rules, and summarizes remaining gaps. Global guard mode installs reversible package-manager shims:
 
 ```sh
 npx --yes execfence guard global-status
 npx --yes execfence guard global-enable
+npx --yes execfence guard global-disable
 ```
 
-It installs skill/defaults and global agent rules only. It does not alter PATH, aliases, shims, shell profiles, or globally intercept package-manager commands.
+It installs skill/defaults, global agent rules, and `npm`/`npx`/`pnpm`/`yarn`/`yarnpkg` shims under `<home>/.execfence/shims/`. Marked shell-profile blocks put that directory before the real package managers in PATH, so terminal commands and agent-run commands pass through ExecFence first. `global-disable` removes the shims and marked profile blocks without deleting reports, config, trust stores, cache, or quarantine metadata.
+
+Install-like commands such as `npm install`, `pnpm add`, `yarn install`, `ci`, `update`, and `rebuild` run after a clean preflight scan and guarded dependency metadata review. npm uses `--ignore-scripts=true`, pnpm uses `--ignore-scripts`, Yarn 1 uses `--ignore-scripts=true`, and Yarn 2+ runs with `YARN_ENABLE_SCRIPTS=0`. Commands that intentionally run scripts, such as `run`, `test`, `start`, `pack`, and `publish`, keep normal package-manager behavior after the scan passes.
 
 ### Manifest
 
@@ -327,12 +332,60 @@ The manifest records execution surfaces such as package scripts, Makefiles, work
 
 ```sh
 npx --yes execfence deps diff
+npx --yes execfence deps review
+npx --yes execfence deps review --base-ref main --package-manager yarn
+npx --yes execfence deps review --format json
 npx --yes execfence pack-audit
 npx --yes execfence trust add tools/reviewed-helper.exe --reason "reviewed helper" --owner security --expires-at 2027-01-01
 npx --yes execfence trust audit
 ```
 
-These commands catch suspicious dependency drift, dangerous packaged files, unreviewed registries/actions/package scopes, and changed trusted artifacts.
+These commands catch suspicious dependency drift, dangerous packaged files, unreviewed registries/actions/package scopes, and changed trusted artifacts. `deps review` aggregates `package-lock.json`, `pnpm-lock.yaml`, and `yarn.lock`, then adds guarded npm metadata for new or changed packages: release cooldown, deprecation/security messaging, registry/source, integrity, lifecycle/bin hints, and recommended actions.
+
+Metadata lookup is deliberately privacy-safe by default. It only queries allowlisted public registries, skips scoped packages unless `supplyChain.metadata.allowedPublicScopes` allows the scope, never uses npm tokens or `.npmrc` auth, caches under `.execfence/cache/`, caps packages per run, and treats network failure as a warning unless configured otherwise. The review also checks package age, recent metadata changes, maintainer presence, integrity, provenance/signature hints, and package tarball content when available.
+
+For runtime-only dependency risk, attach changed-dependency review and sandbox containment status to a command:
+
+```sh
+npx --yes execfence run --dependency-behavior-audit --sandbox-mode audit -- npm test
+```
+
+This does not prove library code safe, but it records whether a test/build/start command that may import changed dependencies ran with network/process/filesystem containment or with degraded local enforcement.
+
+For npm-specific attack mapping and current gaps, see [npm Supply Chain Assessment](npm-supply-chain-assessment.md).
+
+### When Dependency Metadata Blocks Or Warns
+
+Start with the report and the dependency review:
+
+```sh
+npx --yes execfence reports latest
+npx --yes execfence deps review --format json
+```
+
+A block usually means ExecFence received a strong registry signal, such as a release inside the configured cooldown or security-relevant deprecation text. A warning means the package still needs review but the default policy is fail-open, for example because the registry was unreachable. Do not bypass with a private registry allowlist or public-scope allowlist unless sending those package names to that registry is acceptable for the project.
+
+### Re-enable Lifecycle Scripts Safely
+
+The global guard suppresses lifecycle scripts during install-like commands because recent npm attacks often used `preinstall`, `install`, or `postinstall`. If a package genuinely needs lifecycle scripts:
+
+```sh
+npx --yes execfence deps review
+npx --yes execfence pack-audit
+npx --yes execfence run --dependency-behavior-audit --sandbox-mode audit -- npm rebuild <package>
+```
+
+Review the package version, source, integrity, release age, and package contents first. Prefer a targeted rebuild or reviewed package script over rerunning a full install with scripts enabled.
+
+### Token Theft Response
+
+If ExecFence blocks a dependency or lifecycle payload that may have run before the guard was enabled:
+
+1. Preserve `.execfence/reports/` and create an incident bundle.
+2. Rotate npm, GitHub, cloud, CI, SSH, and package-publishing tokens that were reachable from the machine or runner.
+3. Purge local and CI package caches before reinstalling.
+4. Review new workflow files, package scripts, agent tool configs, and changed lockfiles with `agent-report`, `manifest diff`, and `deps review`.
+5. Pin, downgrade, or remove the affected packages before re-enabling installs.
 
 ### Reports And Incidents
 
@@ -399,11 +452,17 @@ When active, the skill should make the agent:
 ## What To Do When ExecFence Blocks
 
 1. Do not rerun the blocked project command outside ExecFence.
-2. Open the newest report:
+2. Open the newest report. If the block came from global npm guard, keep the guard enabled while reviewing:
 
    ```sh
    npx --yes execfence reports latest
    npx --yes execfence reports open <report>
+   ```
+
+   Disable global npm interception only when intentionally leaving guarded execution:
+
+   ```sh
+   npx --yes execfence guard global-disable
    ```
 
 3. Preserve suspicious files and the report.
