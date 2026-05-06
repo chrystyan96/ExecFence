@@ -4,9 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: npm version argument, for example patch, minor, major, or 0.1.1
+        description: Exact package.json version to publish, for example 4.0.0
         required: true
-        default: patch
 
 permissions:
   contents: write
@@ -18,11 +17,31 @@ jobs:
     environment: npm
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
           cache: npm
+      - id: release-version
+        env:
+          RELEASE_INPUT: ${{ inputs.version }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-.+][0-9A-Za-z.-]+)?$'; then
+            echo "::error::package.json version ($VERSION) is not a valid release version."
+            exit 1
+          fi
+          if [ "$RELEASE_INPUT" != "$VERSION" ]; then
+            echo "::error::Release input ($RELEASE_INPUT) must match package.json version ($VERSION). Update version metadata in a PR before publishing."
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/v${VERSION}" >/dev/null 2>&1; then
+            echo "::error::Release tag v${VERSION} already exists."
+            exit 1
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
       - run: npm ci
       - run: npm test
       - run: node bin/execfence.js run -- npm test
@@ -31,14 +50,10 @@ jobs:
       - run: node bin/execfence.js scan --ci --format sarif . > execfence.sarif
       - run: node bin/execfence.js manifest
       - run: node bin/execfence.js pack-audit
-      - run: npm version "${{ inputs.version }}" --no-git-tag-version --allow-same-version
-      - run: node scripts/update-changelog.cjs
+      - run: npm publish --access public --provenance
       - run: |
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION="${{ steps.release-version.outputs.version }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json CHANGELOG.md
-          git commit -m "Release v${VERSION}"
           git tag "v${VERSION}"
-      - run: npm publish --access public --provenance
-      - run: git push --follow-tags
+          git push origin "v${VERSION}"
