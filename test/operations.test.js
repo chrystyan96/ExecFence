@@ -7,6 +7,7 @@ const path = require('node:path');
 const test = require('node:test');
 const { analyzeCoverage } = require('../lib/coverage');
 const { runDoctor } = require('../lib/doctor');
+const { installNpmGuard, shimDir } = require('../lib/npm-guard');
 const { scan } = require('../lib/scanner');
 const { writeReport } = require('../lib/report');
 
@@ -25,6 +26,24 @@ test('coverage detects unguarded and guarded package scripts', () => {
   assert.equal(result.ok, false);
   assert.ok(result.entrypoints.some((entry) => entry.name === 'build' && entry.guarded));
   assert.ok(result.uncovered.some((entry) => entry.name === 'test'));
+});
+
+test('coverage treats active npm guard as complementary package script protection', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-coverage-npm-guard-'));
+  installNpmGuard({ home: root, execFenceBin: path.join(root, 'execfence.js') });
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({
+    scripts: {
+      test: 'node --test',
+    },
+  }, null, 2));
+
+  const result = analyzeCoverage(root, {
+    home: root,
+    env: { PATH: `${shimDir(root)}${path.delimiter}${process.env.PATH || ''}` },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.entrypoints[0].guard, 'npm-guard');
 });
 
 test('doctor proves known malicious fixture is blocked and cleaned up', () => {

@@ -71,6 +71,8 @@ The scanner does not flag every minified file. It focuses on executable project 
 
 Package scripts are treated differently depending on whether they execute automatically. Install-time hooks such as `preinstall`, `install`, `postinstall`, and `prepare` are high-value attacker surfaces because package managers can run them during dependency installation or publication workflows.
 
+When global package-manager guard is enabled, terminal and agent-run `npm`/`npx`/`pnpm`/`yarn`/`yarnpkg` commands pass through ExecFence before the real tool starts. Install-like commands are delegated with lifecycle scripts disabled after a clean scan and guarded dependency metadata review: npm uses `--ignore-scripts=true`, pnpm uses `--ignore-scripts`, Yarn 1 uses `--ignore-scripts=true`, and Yarn 2+ receives `YARN_ENABLE_SCRIPTS=0`.
+
 ExecFence looks for risky behavior such as:
 
 - shell downloads
@@ -95,6 +97,25 @@ Lockfiles are inspected for suspicious sources:
 - lifecycle/bin entries in newly introduced packages
 
 The goal is not to replace dependency vulnerability scanning. It is to catch dependency source changes that may cause code execution during install/build/test.
+
+### Guarded Dependency Metadata Review
+
+`execfence deps review` adds supply-chain metadata checks to changed npm, pnpm, and yarn dependencies. It aggregates `package-lock.json`, `pnpm-lock.yaml`, and `yarn.lock`, then reports package manager, lockfile, package name/version, change type, registry/source, integrity, lifecycle/bin hints, metadata status, tarball status, privacy status, findings, and recommended actions.
+
+The metadata layer is intentionally scoped to supply-chain flows, not every static scan. It runs from `deps review`, the CLI `deps diff` path, `ci`, and global guard install-like commands. It only checks new or changed packages or explicit package specs, skips scoped packages unless allowlisted, skips non-allowlisted registries, never reads npm auth tokens, caches under `.execfence/cache/`, applies short timeouts and package-count limits, and fails open on network errors by default.
+
+Strong signals can block in guarded mode:
+
+- version published inside the configured release cooldown
+- security-relevant deprecation text
+- missing version metadata for the requested package
+- package age, recent package metadata modification, missing maintainers, missing integrity, or missing provenance/signature hints according to policy
+- tarball integrity mismatch, executable artifacts, obfuscated code, or process/network/credential-sensitive code inside reviewed package tarballs
+- metadata lookup failure only when `supplyChain.metadata.networkFailure` is set to `block`
+
+This still does not prove that ordinary library code is safe. Runtime-only malicious behavior that appears only after an application imports or bundles a compromised dependency remains a limitation unless surrounding metadata, scripts, artifacts, lockfile drift, tarball content, or runtime evidence expose it.
+
+Use `execfence run --dependency-behavior-audit --sandbox-mode audit -- <command>` when a test/build/start command may import changed dependencies. The runtime report records the changed-dependency review, sandbox containment status, degraded network/process/filesystem enforcement, generated executable artifacts, and post-run scan evidence.
 
 ### Executable And Archive Artifacts
 

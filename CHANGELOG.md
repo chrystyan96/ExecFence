@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Improved `execfence --help` and `execfence help` with grouped public command descriptions while keeping bare `execfence` as the default scan command.
+- Changed `execfence guard global-enable` to install reversible npm/pnpm/yarn shims and marked shell-profile PATH blocks, so terminal and agent-run package-manager commands preflight through ExecFence before the real tool starts.
+- Added `execfence guard global-disable` to remove global package-manager shims and PATH profile blocks while preserving evidence and project configuration.
+- Added package-manager guard behavior that delegates install-like commands with lifecycle scripts disabled after a clean preflight scan.
+- Added `execfence deps review` for npm/pnpm/yarn lockfile changes with guarded metadata checks, privacy-safe registry lookup, release cooldown blocking, deprecation/security messaging, local cache, and JSON/text output.
+- Expanded `deps review` with package reputation signals, provenance/integrity policy gates, and guarded tarball integrity/content auditing for changed packages.
+- Added `execfence run --dependency-behavior-audit` to attach changed-dependency review and sandbox containment status to runtime evidence.
+- Expanded global guard status with coverage-gap warnings for bun, CI/containers, IDE-integrated package managers, wrappers, and current-shell PATH.
+- Extended global guard shims to `pnpm`, `yarn`, and `yarnpkg`; install-like commands now suppress lifecycle scripts across npm, pnpm, Yarn 1, and Yarn 2+.
+- Added supply-chain metadata config/schema under `supplyChain.metadata` and wired guarded dependency metadata into `deps diff`, `ci`, and global install-like package-manager commands.
+- Added supply-chain playbooks for dependency metadata blocks/warnings, safe lifecycle-script re-enable, and token-theft response.
 - Expanded package lifecycle script detection to flag Windows LOLBins and script hosts such as `bitsadmin`, `Start-BitsTransfer`, `mshta`, `rundll32`, and `regsvr32`.
 
 ## v3.1.0 - 2026-05-01

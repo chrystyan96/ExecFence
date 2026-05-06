@@ -1,6 +1,6 @@
 {
   "name": "execfence",
-  "version": "3.1.1",
+  "version": "4.0.0",
   "description": "ExecFence automatically guards build, dev, test, CI, and agent execution against suspicious project code.",
   "license": "Apache-2.0",
   "author": "Chrystyan Byrnes",

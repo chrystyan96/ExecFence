@@ -8,6 +8,7 @@ const test = require('node:test');
 const {
   guardDisable,
   guardEnable,
+  guardGlobalDisable,
   guardGlobalEnable,
   guardGlobalStatus,
   guardPlan,
@@ -125,17 +126,34 @@ test('guard disable removes generated wrappers and preserves evidence/config dir
   assert.ok(result.changes.some((change) => change.type === 'agent-rule'));
 });
 
-test('guard global enable installs only skill and agent rules', () => {
+test('guard global enable installs skill, agent rules, and npm shims', () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-guard-home-'));
   const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-guard-codex-'));
 
   const enabled = guardGlobalEnable({ home, codexHome });
   const status = guardGlobalStatus({ home, codexHome });
 
-  assert.equal(enabled.shellInterception.enabled, false);
+  assert.equal(enabled.shellInterception.enabled, true);
   assert.equal(status.ok, true);
+  assert.equal(status.npmGuard.enabled, true);
   assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'execfence', 'defaults.json')), true);
   assert.equal(fs.existsSync(path.join(codexHome, 'skills', 'execfence', 'SKILL.md')), true);
-  assert.equal(fs.existsSync(path.join(home, '.bashrc')), false);
-  assert.equal(fs.existsSync(path.join(home, 'Documents', 'PowerShell', 'Microsoft.PowerShell_profile.ps1')), false);
+  assert.equal(fs.existsSync(path.join(home, '.execfence', 'shims', 'npm')), true);
+  assert.equal(fs.existsSync(path.join(home, '.execfence', 'shims', 'npm.cmd')), true);
+  assert.equal(fs.existsSync(path.join(home, '.bashrc')), true);
+  assert.equal(fs.existsSync(path.join(home, 'Documents', 'PowerShell', 'Microsoft.PowerShell_profile.ps1')), true);
+});
+
+test('guard global disable removes npm shims and leaves agent rules', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-guard-disable-home-'));
+  const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-guard-disable-codex-'));
+  guardGlobalEnable({ home, codexHome });
+
+  const disabled = guardGlobalDisable({ home, codexHome });
+  const status = guardGlobalStatus({ home, codexHome });
+
+  assert.equal(disabled.ok, true);
+  assert.equal(status.npmGuard.enabled, false);
+  assert.equal(status.agentRules.every((file) => file.hasRule), true);
+  assert.equal(fs.existsSync(path.join(home, '.execfence', 'shims', 'npm')), false);
 });

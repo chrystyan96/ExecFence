@@ -35,9 +35,11 @@ npx --yes execfence guard status
 npx --yes execfence guard disable
 npx --yes execfence guard global-status
 npx --yes execfence guard global-enable
+npx --yes execfence guard global-disable
 npx --yes execfence run -- npm test
 npx --yes execfence run -- npm run build
 npx --yes execfence run --sandbox-mode audit -- npm test
+npx --yes execfence run --dependency-behavior-audit --sandbox-mode audit -- npm test
 npx --yes execfence run --sandbox -- npm test
 npx --yes execfence sandbox doctor
 npx --yes execfence sandbox plan -- npm test
@@ -47,6 +49,7 @@ npx --yes execfence adopt
 npx --yes execfence adopt --write-baseline
 npx --yes execfence wire --dry-run
 npx --yes execfence deps diff
+npx --yes execfence deps review
 npx --yes execfence policy explain
 npx --yes execfence policy test
 npx --yes execfence manifest
@@ -76,7 +79,7 @@ npx --yes execfence install-agent-rules --scope project
 npx --yes execfence install-agent-rules --verify --scope project
 ```
 
-`guard enable` is dry-run by default. It should be the first recommendation when the user wants automatic protection for `test`, `build`, `dev`, `pack`, `publish`, CI, and agent-driven execution. `guard global-enable` is non-invasive; it installs skill/defaults and global agent rules only, and must not alter PATH, aliases, shims, shell profiles, or intercept package-manager commands globally.
+`guard enable` is dry-run by default. It should be the first recommendation when the user wants project-local automatic protection for `test`, `build`, `dev`, `pack`, `publish`, CI, and agent-driven execution. `guard global-enable` installs skill/defaults, global agent rules, and reversible `npm`/`npx`/`pnpm`/`yarn`/`yarnpkg` shims under `<home>/.execfence/shims/` with marked shell-profile PATH blocks. Use `guard global-disable` to remove those shims and PATH blocks.
 
 ## Minimum Detections
 
@@ -106,7 +109,7 @@ Prefer project config under `.execfence/config/` for policy packs, reviewed exce
 ## User Configuration Surface
 
 Create project configuration through `execfence init`:
-- `.execfence/config/execfence.json`: main config for `policyPack`, `mode`, `blockSeverities`, `warnSeverities`, scan `roots`, `ignoreDirs`, `skipFiles`, `allowExecutables`, `extraSignatures`, `extraRegexSignatures`, `signaturesFile`, `baselineFile`, `reportsDir`, `reportsGitignore`, `runtimeTrace`, `analysis.webEnrichment`, `manifest.blockNewEntrypoints`, `ci`, `wire`, `deps`, `adopt`, `policy`, `trustStore`, `reportRetention`, `reports.retention`, `htmlReport`, `redaction`, `workflowHardening`, `archiveAudit`, and `auditAllPackageScripts`.
+- `.execfence/config/execfence.json`: main config for `policyPack`, `mode`, `blockSeverities`, `warnSeverities`, scan `roots`, `ignoreDirs`, `skipFiles`, `allowExecutables`, `extraSignatures`, `extraRegexSignatures`, `signaturesFile`, `baselineFile`, `reportsDir`, `reportsGitignore`, `runtimeTrace`, `analysis.webEnrichment`, `manifest.blockNewEntrypoints`, `ci`, `wire`, `deps`, `supplyChain.metadata`, `adopt`, `policy`, `trustStore`, `reportRetention`, `reports.retention`, `htmlReport`, `redaction`, `workflowHardening`, `archiveAudit`, and `auditAllPackageScripts`.
 - `.execfence/config/signatures.json`: optional team-owned literal and regex indicators. Use this for new IoCs instead of editing scanner code.
 - `.execfence/config/baseline.json`: optional reviewed exceptions for existing findings. Require `findingId`, `file`, `reason`, `owner`, `expiresAt`, and preferably `sha256`.
 - `.execfence/config/sandbox.json`: sandbox policy for `execfence run --sandbox`, including `mode`, `profile`, filesystem, process, network, and helper settings. Audit mode is safe without a helper; enforce mode must block if enforcement is unavailable unless the user explicitly uses `--allow-degraded`.
@@ -119,7 +122,7 @@ Create project configuration through `execfence init`:
 - `.execfence/quarantine/<report-id>/metadata.json`: quarantine metadata only; do not delete payloads automatically.
 - `<home>/.agents/skills/execfence/defaults.json`: read-only global defaults installed with the skill. Do not ask the user to edit it; project config wins.
 
-Evidence is created automatically for `run`, `scan`, `diff-scan`, `scan-history`, and `doctor`. Each report is a new `.execfence/reports/<project>_<datetime>.json` file with findings, snippets, hashes, git evidence, local analysis, runtime trace when available, and research queries. For `critical` and `high` findings, enrich with public safe sources (OSV, GitHub Advisory, npm metadata, CISA KEV, and reputable web sources when available) after redacting local paths and sensitive snippets. Network/enrichment failure never lowers severity or unblocks execution. Do not delete or rewrite suspicious payloads automatically.
+Evidence is created automatically for `run`, `scan`, `diff-scan`, `scan-history`, and `doctor`. Each report is a new `.execfence/reports/<project>_<datetime>.json` file with findings, snippets, hashes, git evidence, local analysis, runtime trace when available, and research queries. For dependency changes, prefer `deps review` to aggregate npm/pnpm/yarn lockfiles with guarded metadata checks for release cooldown, package reputation, deprecation/security text, source, integrity, provenance/signature hints, tarball content, lifecycle/bin hints, privacy status, and recommended actions. For commands likely to import changed dependencies, prefer `execfence run --dependency-behavior-audit --sandbox-mode audit -- <command>` so runtime evidence records dependency review and containment status. For `critical` and `high` findings, enrich with public safe sources (OSV, GitHub Advisory, npm metadata, CISA KEV, and reputable web sources when available) after redacting local paths and sensitive snippets. Network/enrichment failure never lowers severity or unblocks execution. Do not delete or rewrite suspicious payloads automatically.
 
 ## Preferred CLI
 
