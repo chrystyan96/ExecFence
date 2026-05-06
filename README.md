@@ -124,9 +124,9 @@ npx --yes execfence guard global-enable
 npx --yes execfence guard global-disable
 ```
 
-Global guard mode installs skill/defaults, global agent rules, and reversible `npm`/`npx`/`pnpm`/`yarn`/`yarnpkg` shims under `<home>/.execfence/shims/`. It adds marked shell-profile blocks so terminal commands and agent-run package-manager commands enter ExecFence before the real tool starts. `global-disable` removes the shims and profile blocks.
+Global guard mode installs skill/defaults, global agent rules, and reversible `npm`/`npx`/`pnpm`/`yarn`/`yarnpkg`/`bun`/`bunx` shims under `<home>/.execfence/shims/`. It adds marked shell-profile blocks so terminal commands and agent-run package-manager commands enter ExecFence before the real tool starts. `global-disable` removes the shims and profile blocks.
 
-Install-like commands such as `npm install`, `pnpm add`, `yarn install`, `ci`, `update`, and `rebuild` get a clean preflight scan, guarded dependency metadata review, and lifecycle-script suppression before delegation. npm uses `--ignore-scripts=true`, pnpm uses `--ignore-scripts`, Yarn 1 uses `--ignore-scripts=true`, and Yarn 2+ runs with `YARN_ENABLE_SCRIPTS=0`. Script-running commands such as `npm run`, `pnpm test`, `yarn start`, `pack`, and `publish` keep their primary script semantics after the scan passes.
+Install-like commands such as `npm install`, `pnpm add`, `yarn install`, `bun add`, `ci`, `update`, and `rebuild` get a clean preflight scan, guarded dependency review, and lifecycle-script suppression before delegation. npm and Bun use `--ignore-scripts=true`, pnpm uses `--ignore-scripts`, Yarn 1 uses `--ignore-scripts=true`, and Yarn 2+ runs with `YARN_ENABLE_SCRIPTS=0`. Script-running commands such as `npm run`, `pnpm test`, `yarn start`, `bun test`, `pack`, and `publish` keep their primary script semantics after the scan passes.
 
 Review changed dependency versions and guarded metadata before install or CI:
 
@@ -136,13 +136,27 @@ npx --yes execfence deps review --base-ref main --package-manager pnpm
 npx --yes execfence deps review --format json
 ```
 
-`deps review` aggregates `package-lock.json`, `pnpm-lock.yaml`, and `yarn.lock`. Metadata checks are guarded: public npm registry lookups are limited to new or changed packages, scoped packages are skipped unless allowlisted, non-allowlisted registries are skipped, no npm tokens are used, results are cached under `.execfence/cache/`, and network failures warn by default. It also reviews package age, recent metadata changes, maintainer presence, integrity, provenance/signature hints, and package tarball contents when available.
+`deps review` aggregates `package-lock.json`, `pnpm-lock.yaml`, and `yarn.lock`. Metadata and reputation checks are guarded: public npm registry lookups are limited to new or changed packages, scoped packages are skipped unless allowlisted, non-allowlisted registries are skipped, no npm tokens are used, results are cached under `.execfence/cache/`, and network failures warn by default. It also reviews package age, recent metadata changes, maintainer presence, integrity, provenance/signature hints, OSV advisory records, package tarball contents, and tarball delta against the previous resolved version when available.
+
+For security-sensitive CI or release workflows, enable strict supply-chain mode:
+
+```json
+{
+  "supplyChain": {
+    "mode": "strict"
+  }
+}
+```
+
+`strict` blocks unavailable metadata/reputation/tarball signals, missing integrity/provenance signals, release cooldowns, new package age windows, uncovered package-manager surfaces, and dependency runtime audits that lack helper-backed containment.
 
 Audit runtime behavior for commands likely to import changed dependencies:
 
 ```sh
 npx --yes execfence run --dependency-behavior-audit --sandbox-mode audit -- npm test
 ```
+
+Audit mode records containment evidence. To close runtime behavior risk, `--sandbox` requires a verified helper that declares enforcement for outbound network blocking, sensitive path reads, child-process supervision, and new executable/archive blocking; otherwise ExecFence blocks instead of silently downgrading.
 
 ## Use The Skill
 
@@ -255,8 +269,8 @@ Baselines are meant for reviewed exceptions, not for forcing a build through unk
 | `execfence guard enable` | Show automatic project guardrail plan without writing |
 | `execfence guard enable --apply` | Apply project guardrails, wrappers, CI setup, and local agent rules |
 | `execfence guard disable` | Remove generated wrappers/rules while preserving evidence |
-| `execfence guard global-enable` | Install global skill, agent rules, and reversible npm/pnpm/yarn shims |
-| `execfence guard global-disable` | Remove global npm/pnpm/yarn shims and marked PATH profile blocks |
+| `execfence guard global-enable` | Install global skill, agent rules, and reversible npm/pnpm/yarn/bun shims |
+| `execfence guard global-disable` | Remove global npm/pnpm/yarn/bun shims and marked PATH profile blocks |
 | `execfence manifest` | Generate execution-entrypoint manifest |
 | `execfence manifest diff` | Detect new or changed execution entrypoints |
 | `execfence deps diff` | Compare dependency/lockfile risk |

@@ -200,6 +200,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "mode": { "enum": ["audit", "guarded", "strict"], "default": "guarded" },
         "metadata": {
           "type": "object",
           "additionalProperties": false,
@@ -235,6 +236,22 @@
                 "networkFailure": { "enum": ["warn", "block"], "default": "warn" }
               }
             }
+          }
+        },
+        "reputation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "sources": {
+              "type": "array",
+              "items": { "enum": ["npm", "osv", "github-advisory"] },
+              "default": ["npm", "osv", "github-advisory"]
+            },
+            "cacheTtlMs": { "type": "integer", "minimum": 0, "default": 86400000 },
+            "timeoutMs": { "type": "integer", "minimum": 100, "default": 2500 },
+            "networkFailure": { "enum": ["warn", "block"], "default": "warn" },
+            "maxPackagesPerRun": { "type": "integer", "minimum": 0, "default": 20 }
           }
         }
       }

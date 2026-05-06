@@ -10,6 +10,7 @@ const test = require('node:test');
 const zlib = require('node:zlib');
 const { privacyDecision, reviewDependencies, reviewPackageSpecs } = require('../lib/deps-review');
 const bin = path.join(__dirname, '..', 'bin', 'execfence.js');
+const cleanReputation = () => ({ ok: true, json: {} });
 
 function git(cwd, args) {
   return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
@@ -111,6 +112,7 @@ packages:
 `);
 
   const result = reviewDependencies(root, {
+    fetchReputation: cleanReputation,
     fetchMetadata: (_url, dep) => metadataResponse(dep.name, dep.version),
   });
 
@@ -156,17 +158,20 @@ test('dependency metadata caches successful lookups and warns on network failure
   let calls = 0;
 
   const first = reviewPackageSpecs(root, ['left-pad@1.3.0'], {
+    fetchReputation: cleanReputation,
     fetchMetadata: (_url, dep) => {
       calls += 1;
       return metadataResponse(dep.name, dep.version);
     },
   });
   const second = reviewPackageSpecs(root, ['left-pad@1.3.0'], {
+    fetchReputation: cleanReputation,
     fetchMetadata: () => {
       throw new Error('should use cache');
     },
   });
   const failed = reviewPackageSpecs(fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-deps-review-fail-')), ['left-pad@1.3.0'], {
+    fetchReputation: cleanReputation,
     fetchMetadata: () => ({ ok: false, error: 'registry unavailable' }),
   });
 
@@ -181,6 +186,7 @@ test('dependency metadata caches successful lookups and warns on network failure
 test('dependency metadata blocks release cooldown and security deprecation signals', () => {
   const recent = new Date().toISOString();
   const result = reviewPackageSpecs(fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-deps-review-risk-')), ['plain-crypto-js@4.2.1'], {
+    fetchReputation: cleanReputation,
     fetchMetadata: (_url, dep) => metadataResponse(dep.name, dep.version, {
       publishedAt: recent,
       deprecated: 'malware compromise: do not use',
@@ -196,6 +202,7 @@ test('dependency metadata flags reputation and provenance policy signals', () =>
   const recent = new Date().toISOString();
   const result = reviewPackageSpecs(fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-deps-review-reputation-')), ['fresh-pkg@1.0.0'], {
     config: { metadata: { provenancePolicy: 'block' } },
+    fetchReputation: cleanReputation,
     fetchMetadata: (_url, dep) => metadataResponse(dep.name, dep.version, {
       createdAt: recent,
       modifiedAt: recent,
@@ -215,6 +222,7 @@ test('dependency tarball review validates integrity and scans runtime-sensitive 
     'index.js': "const cp = require('child_process'); fetch(process.env.NPM_TOKEN); cp.exec('whoami');\n",
   });
   const result = reviewPackageSpecs(fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-deps-review-tarball-')), ['runtime-pkg@1.0.0'], {
+    fetchReputation: cleanReputation,
     fetchMetadata: (_url, dep) => metadataResponse(dep.name, dep.version, {
       tarball: 'https://registry.npmjs.org/runtime-pkg/-/runtime-pkg-1.0.0.tgz',
       integrity: integrity(tgz),
@@ -225,6 +233,107 @@ test('dependency tarball review validates integrity and scans runtime-sensitive 
   assert.equal(result.ok, false);
   assert.equal(result.dependencies[0].tarball.status, 'complete');
   assert.ok(result.findings.some((finding) => finding.id === 'dependency-tarball-runtime-sensitive-code'));
+});
+
+test('dependency review compares changed tarball delta against previous version', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-deps-review-delta-'));
+  initRepo(root);
+  const oldTgz = tarGz({ 'index.js': 'module.exports = 1;\n' });
+  const newTgz = tarGz({
+    'index.js': "require('child_process').exec('whoami');\n",
+    'binding.node': 'native',
+  });
+  fs.writeFileSync(path.join(root, 'package-lock.json'), JSON.stringify({
+    lockfileVersion: 3,
+    packages: {
+      '': { name: 'delta-app' },
+      'node_modules/delta-pkg': {
+        version: '1.0.0',
+        resolved: 'https://registry.npmjs.org/delta-pkg/-/delta-pkg-1.0.0.tgz',
+        integrity: integrity(oldTgz),
+      },
+    },
+  }, null, 2));
+  git(root, ['add', '.']);
+  git(root, ['commit', '-m', 'initial']);
+  fs.writeFileSync(path.join(root, 'package-lock.json'), JSON.stringify({
+    lockfileVersion: 3,
+    packages: {
+      '': { name: 'delta-app' },
+      'node_modules/delta-pkg': {
+        version: '1.1.0',
+        resolved: 'https://registry.npmjs.org/delta-pkg/-/delta-pkg-1.1.0.tgz',
+        integrity: integrity(newTgz),
+      },
+    },
+  }, null, 2));
+
+  const result = reviewDependencies(root, {
+    fetchReputation: cleanReputation,
+    fetchMetadata: (_url, dep) => ({
+      ok: true,
+      json: {
+        name: dep.name,
+        'dist-tags': { latest: '1.1.0' },
+        maintainers: [{ name: 'reviewer' }],
+        time: { created: '2000-01-01T00:00:00.000Z', modified: '2000-01-02T00:00:00.000Z', '1.0.0': '2000-01-01T00:00:00.000Z', '1.1.0': '2000-01-02T00:00:00.000Z' },
+        versions: {
+          '1.0.0': { dist: { tarball: 'https://registry.npmjs.org/delta-pkg/-/delta-pkg-1.0.0.tgz', integrity: integrity(oldTgz), signatures: [{ keyid: 'test', sig: 'test' }] } },
+          '1.1.0': { dist: { tarball: 'https://registry.npmjs.org/delta-pkg/-/delta-pkg-1.1.0.tgz', integrity: integrity(newTgz), signatures: [{ keyid: 'test', sig: 'test' }] } },
+        },
+      },
+    }),
+    fetchTarball: (url) => ({ ok: true, bytes: url.includes('1.0.0') ? oldTgz : newTgz }),
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.dependencies[0].tarball.delta.status, 'complete');
+  assert.ok(result.dependencies[0].tarball.delta.addedFiles.some((file) => file.name === 'binding.node'));
+  assert.ok(result.findings.some((finding) => finding.id === 'dependency-tarball-delta-added-dangerous-artifact'));
+  assert.ok(result.findings.some((finding) => finding.id === 'dependency-tarball-delta-changed-runtime-sensitive-code'));
+});
+
+test('dependency reputation blocks OSV advisory matches', () => {
+  const result = reviewPackageSpecs(fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-deps-review-osv-')), ['vuln-pkg@1.0.0'], {
+    fetchMetadata: (_url, dep) => metadataResponse(dep.name, dep.version),
+    fetchReputation: () => ({ ok: true, json: { vulns: [{ id: 'GHSA-test' }] } }),
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.dependencies[0].reputation.status, 'complete');
+  assert.ok(result.findings.some((finding) => finding.id === 'dependency-reputation-osv-advisory'));
+});
+
+test('strict supply-chain mode blocks unavailable medium signals', () => {
+  const result = reviewPackageSpecs(fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-deps-review-strict-')), ['left-pad@1.3.0'], {
+    config: { mode: 'strict' },
+    fetchMetadata: () => ({ ok: false, error: 'registry offline' }),
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.findings[0].id, 'dependency-metadata-unavailable');
+  assert.equal(result.findings[0].severity, 'medium');
+  assert.equal(result.summary.blockedFindings, 1);
+});
+
+test('cached reputation failures still warn and block in strict mode', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-deps-review-rep-cache-'));
+  const first = reviewPackageSpecs(root, ['left-pad@1.3.0'], {
+    config: { mode: 'strict' },
+    fetchMetadata: (_url, dep) => metadataResponse(dep.name, dep.version),
+    fetchReputation: () => ({ ok: false, error: 'osv offline' }),
+  });
+  const second = reviewPackageSpecs(root, ['left-pad@1.3.0'], {
+    config: { mode: 'strict' },
+    fetchMetadata: (_url, dep) => metadataResponse(dep.name, dep.version),
+    fetchReputation: () => {
+      throw new Error('should use cached reputation failure');
+    },
+  });
+
+  assert.equal(first.ok, false);
+  assert.equal(second.ok, false);
+  assert.ok(second.findings.some((finding) => finding.id === 'dependency-reputation-unavailable'));
 });
 
 test('dependency metadata mode off disables registry lookups', () => {
@@ -245,6 +354,7 @@ test('dependency review supports fake registry metadata for integration tests', 
   const result = reviewPackageSpecs(root, ['left-pad@1.3.0'], {
     registryBaseUrl: 'https://registry.npmjs.org',
     config: { metadata: { allowedRegistries: ['registry.npmjs.org'] } },
+    fetchReputation: cleanReputation,
     fetchMetadata: (url, dep) => {
       assert.equal(url, 'https://registry.npmjs.org/left-pad');
       return metadataResponse(dep.name, dep.version);

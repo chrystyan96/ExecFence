@@ -46,6 +46,20 @@ test('coverage treats active npm guard as complementary package script protectio
   assert.equal(result.entrypoints[0].guard, 'npm-guard');
 });
 
+test('coverage strict mode reports uncovered package-manager surfaces', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-coverage-strict-'));
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'strict-app' }, null, 2));
+  fs.writeFileSync(path.join(root, 'bun.lock'), '');
+
+  const result = analyzeCoverage(root, {
+    supplyChain: { mode: 'strict' },
+    env: { PATH: process.env.PATH || '' },
+  });
+
+  assert.equal(result.ok, false);
+  assert.ok(result.uncovered.some((entry) => entry.type === 'package-manager-surface' && entry.name === 'bun'));
+});
+
 test('doctor proves known malicious fixture is blocked and cleaned up', () => {
   const result = runDoctor();
 

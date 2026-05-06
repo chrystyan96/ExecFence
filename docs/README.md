@@ -313,9 +313,9 @@ npx --yes execfence guard global-enable
 npx --yes execfence guard global-disable
 ```
 
-It installs skill/defaults, global agent rules, and `npm`/`npx`/`pnpm`/`yarn`/`yarnpkg` shims under `<home>/.execfence/shims/`. Marked shell-profile blocks put that directory before the real package managers in PATH, so terminal commands and agent-run commands pass through ExecFence first. `global-disable` removes the shims and marked profile blocks without deleting reports, config, trust stores, cache, or quarantine metadata.
+It installs skill/defaults, global agent rules, and `npm`/`npx`/`pnpm`/`yarn`/`yarnpkg`/`bun`/`bunx` shims under `<home>/.execfence/shims/`. Marked shell-profile blocks put that directory before the real package managers in PATH, so terminal commands and agent-run commands pass through ExecFence first. `global-disable` removes the shims and marked profile blocks without deleting reports, config, trust stores, cache, or quarantine metadata.
 
-Install-like commands such as `npm install`, `pnpm add`, `yarn install`, `ci`, `update`, and `rebuild` run after a clean preflight scan and guarded dependency metadata review. npm uses `--ignore-scripts=true`, pnpm uses `--ignore-scripts`, Yarn 1 uses `--ignore-scripts=true`, and Yarn 2+ runs with `YARN_ENABLE_SCRIPTS=0`. Commands that intentionally run scripts, such as `run`, `test`, `start`, `pack`, and `publish`, keep normal package-manager behavior after the scan passes.
+Install-like commands such as `npm install`, `pnpm add`, `yarn install`, `bun add`, `ci`, `update`, and `rebuild` run after a clean preflight scan and guarded dependency review. npm and Bun use `--ignore-scripts=true`, pnpm uses `--ignore-scripts`, Yarn 1 uses `--ignore-scripts=true`, and Yarn 2+ runs with `YARN_ENABLE_SCRIPTS=0`. Commands that intentionally run scripts, such as `run`, `test`, `start`, `pack`, and `publish`, keep normal package-manager behavior after the scan passes.
 
 ### Manifest
 
@@ -338,9 +338,21 @@ npx --yes execfence trust add tools/reviewed-helper.exe --reason "reviewed helpe
 npx --yes execfence trust audit
 ```
 
-These commands catch suspicious dependency drift, dangerous packaged files, unreviewed registries/actions/package scopes, and changed trusted artifacts. `deps review` aggregates `package-lock.json`, `pnpm-lock.yaml`, and `yarn.lock`, then adds guarded npm metadata for new or changed packages: release cooldown, deprecation/security messaging, registry/source, integrity, lifecycle/bin hints, and recommended actions.
+These commands catch suspicious dependency drift, dangerous packaged files, unreviewed registries/actions/package scopes, and changed trusted artifacts. `deps review` aggregates `package-lock.json`, `pnpm-lock.yaml`, and `yarn.lock`, then adds guarded npm metadata and reputation for new or changed packages: release cooldown, deprecation/security messaging, registry/source, integrity, provenance/signature hints, OSV advisory records, lifecycle/bin hints, and recommended actions.
 
-Metadata lookup is deliberately privacy-safe by default. It only queries allowlisted public registries, skips scoped packages unless `supplyChain.metadata.allowedPublicScopes` allows the scope, never uses npm tokens or `.npmrc` auth, caches under `.execfence/cache/`, caps packages per run, and treats network failure as a warning unless configured otherwise. The review also checks package age, recent metadata changes, maintainer presence, integrity, provenance/signature hints, and package tarball content when available.
+Metadata and reputation lookup is deliberately privacy-safe by default. It only queries allowlisted public registries, skips scoped packages unless `supplyChain.metadata.allowedPublicScopes` allows the scope, never uses npm tokens or `.npmrc` auth, caches under `.execfence/cache/`, caps packages per run, and treats network failure as a warning unless configured otherwise. The review also checks package age, recent metadata changes, maintainer presence, integrity, provenance/signature hints, package tarball content, and tarball delta against the previous resolved version when available.
+
+Strict supply-chain mode is available for CI, release, or security-sensitive repositories:
+
+```json
+{
+  "supplyChain": {
+    "mode": "strict"
+  }
+}
+```
+
+`strict` blocks unavailable metadata/reputation/tarball signals, missing integrity/provenance signals, release cooldowns, new package age windows, uncovered package-manager surfaces, and dependency runtime audits without helper-backed containment.
 
 For runtime-only dependency risk, attach changed-dependency review and sandbox containment status to a command:
 
@@ -348,7 +360,7 @@ For runtime-only dependency risk, attach changed-dependency review and sandbox c
 npx --yes execfence run --dependency-behavior-audit --sandbox-mode audit -- npm test
 ```
 
-This does not prove library code safe, but it records whether a test/build/start command that may import changed dependencies ran with network/process/filesystem containment or with degraded local enforcement.
+This does not prove library code safe, but it records whether a test/build/start command that may import changed dependencies ran with network/process/filesystem containment or with degraded local enforcement. Runtime behavior risk is closed only when `--sandbox` uses a verified helper that declares outbound network blocking, sensitive path reads, child-process supervision, and new executable/archive blocking; `--sandbox-mode audit` is evidence, not prevention.
 
 ### When Dependency Metadata Blocks Or Warns
 

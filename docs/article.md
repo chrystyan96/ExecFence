@@ -174,7 +174,7 @@ npx --yes execfence guard enable --apply
 
 The first command is a dry-run. The second writes reversible project-local changes. Use `npx --yes execfence guard disable` to remove generated wrappers and marked agent rules while preserving evidence and configuration.
 
-For terminal and agent-run package-manager commands, use global guard mode. It installs reversible `npm`/`npx`/`pnpm`/`yarn`/`yarnpkg` shims so raw commands such as `npm test`, `pnpm add`, and `yarn install` pass through ExecFence before the real package manager starts.
+For terminal and agent-run package-manager commands, use global guard mode. It installs reversible `npm`/`npx`/`pnpm`/`yarn`/`yarnpkg`/`bun`/`bunx` shims so raw commands such as `npm test`, `pnpm add`, `yarn install`, and `bun add` pass through ExecFence before the real package manager starts.
 
 ### The Codex/Agent Skill
 
@@ -425,7 +425,7 @@ to:
 execfence run -- npm test
 ```
 
-`guard enable` is the recommended high-level entrypoint for project adoption. It runs `init`, checks coverage, applies wrappers, installs project-local agent rules, and reports remaining gaps. Global guard mode installs reversible npm/pnpm/yarn shims:
+`guard enable` is the recommended high-level entrypoint for project adoption. It runs `init`, checks coverage, applies wrappers, installs project-local agent rules, and reports remaining gaps. Global guard mode installs reversible npm/pnpm/yarn/bun shims:
 
 ```sh
 npx --yes execfence guard global-status
@@ -433,7 +433,7 @@ npx --yes execfence guard global-enable
 npx --yes execfence guard global-disable
 ```
 
-It installs skill/defaults, global agent rules, and marked shell-profile PATH blocks for `<home>/.execfence/shims/`. Terminal and agent-run npm, pnpm, and yarn commands enter ExecFence before the real package manager starts. Install-like commands get a clean preflight scan, guarded dependency metadata review, and lifecycle-script suppression; script-running commands keep normal package-manager behavior after the scan passes.
+It installs skill/defaults, global agent rules, and marked shell-profile PATH blocks for `<home>/.execfence/shims/`. Terminal and agent-run npm, pnpm, Yarn, and Bun commands enter ExecFence before the real package manager starts. Install-like commands get a clean preflight scan, guarded dependency metadata/reputation/tarball review, and lifecycle-script suppression; script-running commands keep normal package-manager behavior after the scan passes.
 
 ### Supply Chain And Package Audit
 
@@ -444,7 +444,7 @@ npx --yes execfence pack-audit
 npx --yes execfence trust audit
 ```
 
-These commands focus on lockfile drift, suspicious package sources, dangerous package contents, and changed trusted artifacts.
+These commands focus on lockfile drift, suspicious package sources, guarded package metadata/reputation, OSV advisory matches, tarball integrity/content, tarball delta against the previous resolved version, dangerous package contents, and changed trusted artifacts. For CI or release workflows, `supplyChain.mode: "strict"` blocks unavailable signals, cooldown/age windows, missing integrity/provenance, uncovered package-manager surfaces, and changed-dependency runtime audits that lack helper-backed containment.
 
 ### Agent And MCP Report
 
