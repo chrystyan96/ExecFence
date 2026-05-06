@@ -165,7 +165,7 @@ The CLI is the part that performs enforcement and evidence collection:
 
 If you only want terminal/CI protection, the npm CLI is enough.
 
-ExecFence does not globally intercept raw commands such as `npm test`, `go test`, or `cargo test` by default. To make project commands route through ExecFence automatically, use project guard mode:
+For repository-local protection, use project guard mode:
 
 ```sh
 npx --yes execfence guard enable
@@ -173,6 +173,8 @@ npx --yes execfence guard enable --apply
 ```
 
 The first command is a dry-run. The second writes reversible project-local changes. Use `npx --yes execfence guard disable` to remove generated wrappers and marked agent rules while preserving evidence and configuration.
+
+For terminal and agent-run package-manager commands, use global guard mode. It installs reversible `npm`/`npx`/`pnpm`/`yarn`/`yarnpkg`/`bun`/`bunx` shims so raw commands such as `npm test`, `pnpm add`, `yarn install`, and `bun add` pass through ExecFence before the real package manager starts.
 
 ### The Codex/Agent Skill
 
@@ -196,7 +198,7 @@ After that, Codex can use the skill when it is working on a persistent project. 
 - call `npx --yes execfence init --preset auto` when guardrails are missing
 - prefer `execfence run -- <command>` instead of raw `npm test`, `go test`, or similar commands
 - use `execfence run --sandbox-mode audit -- <command>` for higher-risk local execution
-- run `execfence ci`, `coverage`, `deps diff`, `pack-audit`, and `agent-report` when appropriate
+- run `execfence ci`, `coverage`, `deps diff`, `deps review`, `pack-audit`, and `agent-report` when appropriate
 - avoid ignoring `critical` or `high` findings unless a reviewed baseline exists
 - preserve `.execfence/reports/*.json` after a block
 
@@ -423,24 +425,26 @@ to:
 execfence run -- npm test
 ```
 
-`guard enable` is the recommended high-level entrypoint for project adoption. It runs `init`, checks coverage, applies wrappers, installs project-local agent rules, and reports remaining gaps. Global guard mode is experimental and non-invasive:
+`guard enable` is the recommended high-level entrypoint for project adoption. It runs `init`, checks coverage, applies wrappers, installs project-local agent rules, and reports remaining gaps. Global guard mode installs reversible npm/pnpm/yarn/bun shims:
 
 ```sh
 npx --yes execfence guard global-status
 npx --yes execfence guard global-enable
+npx --yes execfence guard global-disable
 ```
 
-It installs skill/defaults and global agent rules only. It does not alter PATH, aliases, shell profiles, or globally intercept package-manager commands.
+It installs skill/defaults, global agent rules, and marked shell-profile PATH blocks for `<home>/.execfence/shims/`. Terminal and agent-run npm, pnpm, Yarn, and Bun commands enter ExecFence before the real package manager starts. Install-like commands get a clean preflight scan, guarded dependency metadata/reputation/tarball review, and lifecycle-script suppression; script-running commands keep normal package-manager behavior after the scan passes.
 
 ### Supply Chain And Package Audit
 
 ```sh
 npx --yes execfence deps diff
+npx --yes execfence deps review
 npx --yes execfence pack-audit
 npx --yes execfence trust audit
 ```
 
-These commands focus on lockfile drift, suspicious package sources, dangerous package contents, and changed trusted artifacts.
+These commands focus on lockfile drift, suspicious package sources, guarded package metadata/reputation, OSV advisory matches, tarball integrity/content, tarball delta against the previous resolved version, dangerous package contents, and changed trusted artifacts. For CI or release workflows, `supplyChain.mode: "strict"` blocks unavailable signals, cooldown/age windows, missing integrity/provenance, uncovered package-manager surfaces, and changed-dependency runtime audits that lack helper-backed containment.
 
 ### Agent And MCP Report
 
@@ -496,6 +500,7 @@ npx --yes execfence manifest diff
 npx --yes execfence coverage --fix-suggestions
 npx --yes execfence wire --dry-run
 npx --yes execfence deps diff
+npx --yes execfence deps review
 npx --yes execfence pack-audit
 npx --yes execfence trust audit
 npx --yes execfence reports diff <old-report.json> <new-report.json>

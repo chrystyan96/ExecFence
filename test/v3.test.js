@@ -105,6 +105,14 @@ test('helper audit validates installed helper metadata without requiring bundled
     platform: process.platform,
     sha256: '0'.repeat(64),
     provenance: 'test-fixture',
+    capabilities: {
+      filesystem: true,
+      sensitiveReads: true,
+      process: true,
+      childProcesses: true,
+      network: true,
+      newExecutables: true,
+    },
   }, null, 2));
 
   const result = helperAudit(root);

@@ -31,7 +31,7 @@ jobs:
       - run: node bin/execfence.js scan --ci --format sarif . > execfence.sarif
       - run: node bin/execfence.js manifest
       - run: node bin/execfence.js pack-audit
-      - run: npm version "${{ inputs.version }}" --no-git-tag-version
+      - run: npm version "${{ inputs.version }}" --no-git-tag-version --allow-same-version
       - run: node scripts/update-changelog.cjs
       - run: |
           VERSION=$(node -p "require('./package.json').version")
