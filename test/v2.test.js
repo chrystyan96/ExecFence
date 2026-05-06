@@ -310,6 +310,21 @@ test('ci command aggregates scan, manifest, deps, pack, and trust checks', () =>
   assert.ok(result.findings.some((finding) => finding.id === 'manifest-new-entrypoint'));
 });
 
+test('ci strict supply-chain mode blocks uncovered package-manager execution surfaces', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-ci-strict-'));
+  fs.mkdirSync(path.join(root, '.execfence', 'config'), { recursive: true });
+  fs.writeFileSync(path.join(root, '.execfence', 'config', 'execfence.json'), JSON.stringify({
+    supplyChain: { mode: 'strict', metadata: { enabled: false } },
+  }, null, 2));
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'strict-ci', scripts: { test: 'node --test' } }, null, 2));
+  fs.writeFileSync(path.join(root, 'bun.lock'), '');
+
+  const result = runCi(root);
+
+  assert.equal(result.ok, false);
+  assert.ok(result.findings.some((finding) => finding.id === 'supply-chain-package-manager-surface-uncovered'));
+});
+
 test('baseline helper adds report findings with owner reason expiry and hash', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-baseline-add-'));
   fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'baseline-add' }, null, 2));

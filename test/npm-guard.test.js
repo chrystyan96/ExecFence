@@ -41,7 +41,7 @@ test('npm guard installs POSIX, cmd, and PowerShell shims', () => {
   const dir = shimDir(home);
 
   assert.equal(installed.enabled, true);
-  for (const name of ['npm', 'npm.cmd', 'npm.ps1', 'npx', 'npx.cmd', 'npx.ps1', 'pnpm', 'pnpm.cmd', 'pnpm.ps1', 'yarn', 'yarn.cmd', 'yarn.ps1', 'yarnpkg', 'yarnpkg.cmd', 'yarnpkg.ps1']) {
+  for (const name of ['npm', 'npm.cmd', 'npm.ps1', 'npx', 'npx.cmd', 'npx.ps1', 'pnpm', 'pnpm.cmd', 'pnpm.ps1', 'yarn', 'yarn.cmd', 'yarn.ps1', 'yarnpkg', 'yarnpkg.cmd', 'yarnpkg.ps1', 'bun', 'bun.cmd', 'bun.ps1', 'bunx', 'bunx.cmd', 'bunx.ps1']) {
     assert.equal(fs.existsSync(path.join(dir, name)), true);
   }
   assert.equal(npmGuardStatus({ home }).enabled, true);
@@ -69,7 +69,9 @@ test('npm guard classifies risky npm and npx commands', () => {
   assert.deepEqual(classifyNpmCommand('npm', ['run', 'build']), { risky: true, installLike: false, command: 'run' });
   assert.deepEqual(classifyNpmCommand('npm', ['view', 'execfence']), { risky: false, installLike: false, command: 'view' });
   assert.deepEqual(classifyNpmCommand('npx', ['vite', '--version']), { risky: true, installLike: false, command: 'exec' });
+  assert.deepEqual(classifyNpmCommand('bunx', ['vite', '--version']), { risky: true, installLike: false, command: 'exec' });
   assert.deepEqual(classifyNpmCommand('pnpm', ['add', 'left-pad']), { risky: true, installLike: true, command: 'add' });
+  assert.deepEqual(classifyNpmCommand('bun', ['add', 'left-pad']), { risky: true, installLike: true, command: 'add' });
   assert.deepEqual(classifyNpmCommand('yarn', ['install']), { risky: true, installLike: true, command: 'install' });
   assert.deepEqual(enforceIgnoreScripts(['install', 'left-pad']), ['install', 'left-pad', '--ignore-scripts=true']);
   assert.deepEqual(enforceInstallScriptPolicy('pnpm', ['add', 'left-pad']).args, ['add', 'left-pad', '--ignore-scripts']);
@@ -129,13 +131,15 @@ test('npm guard global disable removes shims and profile blocks', () => {
   assert.ok(disabled.profiles.some((profile) => profile.changed));
 });
 
-test('package guard delegates pnpm and yarn with lifecycle scripts disabled', () => {
+test('package guard delegates pnpm, yarn, and bun with lifecycle scripts disabled', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-pm-clean-'));
   const realDir = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-real-pm-'));
   const pnpmMarker = path.join(root, 'pnpm-called.txt');
   const yarnMarker = path.join(root, 'yarn-called.txt');
+  const bunMarker = path.join(root, 'bun-called.txt');
   writeFakeCommand(realDir, 'pnpm', pnpmMarker);
   writeFakeCommand(realDir, 'yarn', yarnMarker);
+  writeFakeCommand(realDir, 'bun', bunMarker);
   fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'clean' }, null, 2));
 
   const pnpm = runNpmGuard('pnpm', ['add', 'left-pad'], {
@@ -153,11 +157,20 @@ test('package guard delegates pnpm and yarn with lifecycle scripts disabled', ()
     yarnMajor: 1,
     supplyChain: { metadata: { enabled: false } },
   });
+  const bun = runNpmGuard('bun', ['add', 'left-pad'], {
+    cwd: root,
+    home: root,
+    env: { PATH: pathEnv(realDir) },
+    stdio: 'pipe',
+    supplyChain: { metadata: { enabled: false } },
+  });
 
   assert.equal(pnpm.ok, true);
   assert.equal(yarn.ok, true);
+  assert.equal(bun.ok, true);
   assert.match(fs.readFileSync(pnpmMarker, 'utf8'), /--ignore-scripts/);
   assert.match(fs.readFileSync(yarnMarker, 'utf8'), /--ignore-scripts=true/);
+  assert.match(fs.readFileSync(bunMarker, 'utf8'), /--ignore-scripts=true/);
 });
 
 function shellQuote(value) {
