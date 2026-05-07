@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## v5.0.0 - 2026-05-07
+
+- Expanded ExecFence from npm-centric guardrails to JavaScript, Python, Rust, Go, JVM, .NET, PHP, and Ruby package-manager surfaces.
+- Added the Windows/Linux sandbox helper contract with helper self-test proof, verified helper execution, deny-event reporting, and no silent enforce-to-audit downgrade.
+- Added shared `covered` and `directGuarded` evidence across coverage, manifest, CI, and reports so release review can distinguish operational coverage from direct wrappers.
+- Added stricter config validation, blocking summaries, multi-ecosystem fixtures, helper smoke evidence, and tag-sourced npm release gates.
+- Documented that the npm package ships helper source for review/build, not a prebuilt trusted helper binary; enforce mode still requires a reviewed local helper registered with `sandbox install-helper --binary`.
+
 ## v4.0.1 - 2026-05-06
 
 - Kept the release workflow compatible with branch protection by requiring version metadata to be updated in a PR before publishing, then publishing and tagging without pushing release metadata back to `master`.
