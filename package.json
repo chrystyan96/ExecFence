@@ -25,11 +25,12 @@
     "test": "node --test",
     "helper:test": "cd helper && go test ./...",
     "helper:build": "cd helper && go build -o ../.execfence/cache/execfence-helper-local.exe ./cmd/execfence-helper",
+    "helper:smoke": "node scripts/helper-smoke.cjs",
     "scan": "node bin/execfence.js scan .",
     "coverage:execfence": "node bin/execfence.js coverage",
     "pr:check": "npm test && npm run scan",
     "check": "npm test && npm run scan && node bin/execfence.js ci",
-    "release:weekly-check": "npm run check && node bin/execfence.js run -- npm test && node bin/execfence.js ci && node bin/execfence.js manifest && node bin/execfence.js pack-audit && npm pack --dry-run",
+    "release:weekly-check": "npm run check && npm run helper:smoke && node bin/execfence.js run -- npm test && node bin/execfence.js ci && node bin/execfence.js manifest && node bin/execfence.js pack-audit && npm pack --dry-run",
     "publish:dry": "node bin/execfence.js publish",
     "pack:dry": "npm pack --dry-run"
   },

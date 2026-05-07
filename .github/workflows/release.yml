@@ -5,8 +5,12 @@ on:
     tags:
       - 'v*'
 
+concurrency:
+  group: npm-release-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
-  contents: write
+  contents: read
   id-token: write
 
 jobs:
@@ -46,8 +50,16 @@ jobs:
             exit 1
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+      - id: npm-version
+        run: |
+          VERSION="${{ steps.release-version.outputs.version }}"
+          if npm view "execfence@${VERSION}" version --registry=https://registry.npmjs.org >/dev/null 2>&1; then
+            echo "::error::execfence@${VERSION} is already published on npm."
+            exit 1
+          fi
       - run: npm ci
       - run: npm test
+      - run: npm run helper:smoke
       - run: node bin/execfence.js run -- npm test
       - run: node bin/execfence.js ci
       - run: npm run scan

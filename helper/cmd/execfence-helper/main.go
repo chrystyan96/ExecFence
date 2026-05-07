@@ -74,7 +74,7 @@ type event struct {
 	File      string `json:"file,omitempty"`
 	Reason    string `json:"reason,omitempty"`
 	PID       int    `json:"pid,omitempty"`
-	ExitCode  int    `json:"exitCode,omitempty"`
+	ExitCode  int    `json:"exitCode"`
 }
 
 type fileInfo struct {

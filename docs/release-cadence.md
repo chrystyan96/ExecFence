@@ -8,7 +8,7 @@ ExecFence ships on a weekly SemVer rhythm. The goal is to make one user-visible 
 | --- | --- | --- |
 | Tuesday | 15:30 BRT | Plan one small PR focused on detection, examples, fixtures, rules, reports, or diagnostics. |
 | Thursday | 15:30 BRT | Plan one small stabilization PR focused on docs, tests, CLI usability, compatibility, or release risk reduction. |
-| Friday | 15:30 BRT | Prepare the weekly SemVer release checklist, changelog notes, verification evidence, and release workflow input. |
+| Friday | 15:30 BRT | Prepare the weekly SemVer release checklist, changelog notes, verification evidence, and tag-ready release commit. |
 
 The priority order for weekly work is:
 
@@ -36,7 +36,7 @@ Every PR or update must explicitly review documentation impact. Public changes t
 
 Before release, run `execfence config validate --strict` and review the latest report `blockingSummary`. Do not ship a command that says OK while another report shows an unexplained uncovered surface.
 
-For v5 sandbox releases, also build and smoke-test the Go helper for Windows and Linux. Enforce mode is releasable only when every claimed helper capability is backed by self-test evidence; unsupported capabilities must appear in `sandbox doctor`, reports, and strict-mode blocks rather than being documented as protection.
+For v5 sandbox releases, also build and smoke-test the Go helper for Windows and Linux with `npm run helper:smoke`. Enforce mode is releasable only when every claimed helper capability is backed by self-test evidence; unsupported capabilities must appear in `sandbox doctor`, reports, and strict-mode blocks rather than being documented as protection.
 
 `README.md` is the primary GitHub and npm entrypoint. Review it for every update, and update it whenever a change adds or changes a user-visible feature, command, workflow, positioning, or usage path. If `README.md` does not change, the PR or release checklist must state why: either the change has no public behavior impact, or the existing README already covers it.
 
@@ -93,7 +93,7 @@ Use the Tuesday checkpoint to pick the smallest detection-first PR that can be r
 
 Use the Thursday checkpoint to reduce release risk. Good candidates include docs cleanup, command help alignment, fixture cleanup, CI hardening, schema examples, and compatibility fixes discovered during the week.
 
-Use the Friday checkpoint to prepare the release without making unrelated feature changes. Review commits since the latest tag, choose `patch`, `minor`, or `major`, prepare changelog notes, and run the full verification command before dispatching the existing release workflow.
+Use the Friday checkpoint to prepare the release without making unrelated feature changes. Review commits since the latest tag, choose `patch`, `minor`, or `major`, prepare changelog notes, and run the full verification command before creating the matching `vX.Y.Z` tag from `master`.
 
 ## Verification Commands
 
@@ -113,6 +113,7 @@ The weekly check expands to:
 
 ```sh
 npm run check
+npm run helper:smoke
 node bin/execfence.js run -- npm test
 node bin/execfence.js ci
 node bin/execfence.js manifest
@@ -120,7 +121,9 @@ node bin/execfence.js pack-audit
 npm pack --dry-run
 ```
 
-Do not publish a release if tests fail, the ExecFence CI bundle fails, package audit fails, or the changelog/release notes do not describe the user-visible changes.
+Do not publish a release if tests fail, the helper smoke fails on Windows or Linux, the ExecFence CI bundle fails, package audit fails, or the changelog/release notes do not describe the user-visible changes.
+
+The npm release workflow is tag-sourced. It starts only when a `v*` tag is pushed, verifies that the tag points at the current `origin/master` commit, verifies that the tag version matches `package.json`, checks that the same package version is not already present on npm, then publishes with provenance. Do not use manual workflow dispatch or a post-publish tag for npm releases.
 
 ## Automation Contract
 
