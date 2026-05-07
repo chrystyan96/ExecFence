@@ -70,7 +70,7 @@ Install-like commands such as `npm install`, `pnpm add`, `pip install`, `uv add`
 | `npx --yes execfence run --sandbox -- npm test` | Enforce mode. It only runs if a verified Windows/Linux helper proves every required capability; otherwise it blocks before the command starts. |
 | `npx --yes execfence sandbox doctor` | Prints local sandbox capability status: helper install state, `helperVerified`, capability proof, unsupported capabilities, and missing requirements for enforce mode. |
 | `npx --yes execfence sandbox plan -- npm test` | Explains the sandbox policy that would apply to a command: filesystem, process, network, helper proof, missing enforcement, and block reasons. |
-| `npx --yes execfence sandbox install-helper --binary ./execfence-helper` | Registers a helper binary, computes SHA-256, stores helper metadata, runs helper audit, and reports which capabilities are actually proven. |
+| `npx --yes execfence sandbox install-helper --binary ./path/to/execfence-helper` | Registers a reviewed helper binary, computes SHA-256, stores helper metadata, runs helper audit, and reports which capabilities are actually proven. |
 | `npx --yes execfence helper audit` | Rechecks the installed helper metadata, binary hash, platform/arch, provenance, self-test output, capability proof, and unsupported capabilities. |
 
 ## Sandbox Helper
@@ -81,12 +81,14 @@ Sandbox audit mode records the policy, local capability matrix, runtime trace, f
 npx --yes execfence run --sandbox-mode audit -- npm test
 ```
 
+The npm package includes the helper source under `helper/` so it can be reviewed and built, but it does not install a prebuilt trusted helper binary. Enforce mode stays disabled until you build or otherwise obtain a reviewed Windows/Linux helper binary and register that exact file.
+
 Sandbox enforce mode only runs through a verified Windows/Linux helper:
 
 ```sh
 npx --yes execfence sandbox doctor
 npx --yes execfence sandbox plan -- npm test
-npx --yes execfence sandbox install-helper --binary ./execfence-helper
+npx --yes execfence sandbox install-helper --binary ./path/to/execfence-helper
 npx --yes execfence run --sandbox -- npm test
 ```
 

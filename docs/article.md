@@ -275,7 +275,7 @@ Dependency-free also helps in CI and incident response:
 - easier `npm pack --dry-run` review
 - simpler use in temporary or suspicious workspaces
 
-ExecFence v5 introduces a real helper contract for Windows and Linux. The base scanner, runtime gate, reports, CI command, and skill remain usable without mandatory helper installation, but enforce mode only runs through a verified helper binary that passes `execfence-helper self-test`. Metadata-only helpers do not enable enforcement.
+ExecFence v5 introduces a real helper contract for Windows and Linux. The base scanner, runtime gate, reports, CI command, and skill remain usable without mandatory helper installation, but enforce mode only runs through a verified helper binary that passes `execfence-helper self-test`. Metadata-only helpers do not enable enforcement, and the npm package ships helper source for review/build rather than a prebuilt trusted helper binary.
 
 ## What The Scanner Inspects
 
@@ -384,12 +384,14 @@ npx --yes execfence run --record-artifacts --deny-on-new-executable -- npm test
 npx --yes execfence sandbox init
 npx --yes execfence sandbox doctor
 npx --yes execfence sandbox plan -- npm test
-npx --yes execfence sandbox install-helper --binary ./execfence-helper
+npx --yes execfence sandbox install-helper --binary ./path/to/execfence-helper
 npx --yes execfence helper audit
 npx --yes execfence run --sandbox-mode audit -- npm test
 ```
 
 Audit mode records what would be allowed or blocked across filesystem, process, and network policy.
+
+Before enforce mode can run, build or obtain a reviewed Windows/Linux helper binary and register that exact file. The package includes helper source under `helper/`; it does not silently install or trust a compiled helper during `npx` or global CLI installation.
 
 Enforce mode is explicit:
 
@@ -633,7 +635,7 @@ For higher-risk local execution:
 ```sh
 npx --yes execfence sandbox doctor
 npx --yes execfence sandbox plan -- npm test
-npx --yes execfence sandbox install-helper --binary ./execfence-helper
+npx --yes execfence sandbox install-helper --binary ./path/to/execfence-helper
 npx --yes execfence helper audit
 npx --yes execfence run --sandbox-mode audit -- npm test
 npx --yes execfence run --sandbox -- npm test
