@@ -1,14 +1,16 @@
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: Exact package.json version to publish, for example 4.0.0
-        required: true
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: npm-release-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
 
 jobs:
@@ -24,26 +26,40 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
           cache: npm
+      - id: tag-source
+        run: |
+          git fetch --force origin master:refs/remotes/origin/master
+          TAG_COMMIT="$(git rev-list -n 1 "$GITHUB_REF_NAME")"
+          MASTER_COMMIT="$(git rev-parse refs/remotes/origin/master)"
+          if [ "$TAG_COMMIT" != "$MASTER_COMMIT" ]; then
+            echo "::error::Release tag $GITHUB_REF_NAME must point at the current origin/master commit."
+            echo "::error::tag=$TAG_COMMIT master=$MASTER_COMMIT"
+            exit 1
+          fi
+          echo "tag_commit=${TAG_COMMIT}" >> "$GITHUB_OUTPUT"
       - id: release-version
-        env:
-          RELEASE_INPUT: ${{ inputs.version }}
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
           if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-.+][0-9A-Za-z.-]+)?$'; then
             echo "::error::package.json version ($VERSION) is not a valid release version."
             exit 1
           fi
-          if [ "$RELEASE_INPUT" != "$VERSION" ]; then
-            echo "::error::Release input ($RELEASE_INPUT) must match package.json version ($VERSION). Update version metadata in a PR before publishing."
-            exit 1
-          fi
-          if git ls-remote --exit-code --tags origin "refs/tags/v${VERSION}" >/dev/null 2>&1; then
-            echo "::error::Release tag v${VERSION} already exists."
+          if [ "$TAG_VERSION" != "$VERSION" ]; then
+            echo "::error::Release tag ($GITHUB_REF_NAME) must match package.json version ($VERSION)."
             exit 1
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+      - id: npm-version
+        run: |
+          VERSION="${{ steps.release-version.outputs.version }}"
+          if npm view "execfence@${VERSION}" version --registry=https://registry.npmjs.org >/dev/null 2>&1; then
+            echo "::error::execfence@${VERSION} is already published on npm."
+            exit 1
+          fi
       - run: npm ci
       - run: npm test
+      - run: npm run helper:smoke
       - run: node bin/execfence.js run -- npm test
       - run: node bin/execfence.js ci
       - run: npm run scan
@@ -51,9 +67,3 @@ jobs:
       - run: node bin/execfence.js manifest
       - run: node bin/execfence.js pack-audit
       - run: npm publish --access public --provenance
-      - run: |
-          VERSION="${{ steps.release-version.outputs.version }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag "v${VERSION}"
-          git push origin "v${VERSION}"

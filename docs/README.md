@@ -12,6 +12,31 @@ The project intentionally sits close to the developer workflow:
 
 ExecFence is not an antivirus, EDR, SCA platform, or remote sandbox service. It is a lightweight, dependency-free CLI and agent skill that focuses on one narrow but high-impact problem: suspicious code becoming active during normal development.
 
+## What Version 5 Adds
+
+Version 5 is the major release that moves ExecFence from npm-centric guardrails to multi-ecosystem supply-chain coverage and helper-backed sandbox evidence.
+
+The multi-ecosystem layer covers:
+
+- npm, pnpm, Yarn, and Bun manifests, lockfiles, install-like commands, lifecycle scripts, and runtime-like commands
+- Python `pip`, `pipx`, `uv`, Poetry, `requirements*.txt`, `pyproject.toml`, `poetry.lock`, and `uv.lock`
+- Rust/Cargo `Cargo.toml`, `Cargo.lock`, `cargo add/install/update/fetch/build/test/run/check`, `build.rs`, proc-macro and native-artifact surfaces
+- Go `go.mod`, `go.sum`, `go.work`, `go get`, `go install pkg@version`, `go mod download/tidy`, `go work sync`, `go run`, `go build`, `go test`, `go generate`, and `go vet`
+- JVM Maven/Gradle files and repositories/plugins
+- .NET/NuGet project files, lockfiles, restore/build/test/run surfaces, and package sources
+- Composer/PHP and Bundler/Ruby manifests, lockfiles, scripts, git/path package sources, and runtime-like commands
+
+The sandbox layer adds:
+
+- Windows and Linux helper support through a Go supervisor binary
+- `execfence-helper self-test` as required capability proof before enforce mode
+- `execfence-helper run --policy <policy.json> -- <command>` as the only enforce-mode execution path
+- helper manifests pinned by platform, arch, SHA-256, provenance, version, and self-test evidence
+- report fields such as `helperVerified`, `capabilityProof`, and `unsupportedCapabilities`
+- strict/enforce blocking when required containment cannot be proven
+
+This is not a blanket claim that every dependency is safe or every platform sandbox primitive exists. Version 5 is explicit about what is covered, what is only audited, and what remains unsupported until a helper proves it on the current host.
+
 ## Why ExecFence Exists
 
 Modern software projects execute code in many places that do not look like application code:
@@ -68,7 +93,7 @@ Trend Micro's Void Dokkaebi article is important because it focuses on malware d
 | Developer is told to clone/open a repository | `execfence scan`, `doctor`, and known IoC checks inspect the repo before execution. |
 | Interview/task project hides suspicious JavaScript | Scanner rules look for injected loader markers, dynamic loaders, obfuscation, shell execution, and known IoCs. |
 | Repository uses IDE/task automation | `.vscode/tasks.json` and folder-open execution are treated as execution surfaces. |
-| Package install/build runs attacker code | npm/pnpm/yarn/bun lifecycle scripts and lockfiles are audited. |
+| Package install/build runs attacker code | npm/pnpm/yarn/bun, Python, Cargo, Go, JVM, .NET, Composer, and Bundler manifests, lockfiles, install commands, and runtime-like commands are audited. |
 | Malware drops or modifies binaries | Runtime trace can detect created/modified executable artifacts, and `--deny-on-new-executable` can block after execution. |
 | CI or agent runs changed scripts | `manifest diff`, `coverage`, `ci`, and `agent-report` identify new or unguarded execution entrypoints. |
 | Agent tool config exposes shell/filesystem/network | MCP/tool/agent configs are audited for broad shell, filesystem, browser, credential, or network access. |
@@ -100,7 +125,7 @@ ExecFence is designed for:
 - injected JavaScript loaders in project files
 - suspicious build or config files that execute during dev/build/test
 - `.vscode/tasks.json` folder-open autostart behavior
-- npm/pnpm/yarn/bun lifecycle scripts with download/eval/shell behavior or Windows LOLBins such as `bitsadmin`, `mshta`, `rundll32`, and `regsvr32`
+- npm/pnpm/yarn/bun lifecycle scripts, Python build scripts, Rust `build.rs`, Go `go generate`, Composer/Bundler scripts, and shell/download/eval behavior or Windows LOLBins such as `bitsadmin`, `mshta`, `rundll32`, and `regsvr32`
 - suspicious package manager lockfile sources
 - unexpected executables and archives in source or build-input folders
 - new or modified execution entrypoints
@@ -160,13 +185,13 @@ npx --yes execfence sandbox plan -- npm test
 npx --yes execfence run --sandbox-mode audit -- npm test
 ```
 
-Use hard sandbox enforcement only when the local platform/helper can actually enforce the requested controls:
+Use hard sandbox enforcement only when a verified Windows or Linux helper can actually enforce the requested controls:
 
 ```sh
 npx --yes execfence run --sandbox -- npm test
 ```
 
-If hard enforcement is requested and filesystem/process/network enforcement is unavailable, ExecFence blocks before running the command. It never silently downgrades `--sandbox` to audit mode.
+If hard enforcement is requested and filesystem/process/network/process-tree enforcement is unavailable, ExecFence blocks before running the command. It never silently downgrades `--sandbox` to audit mode. Helper metadata alone is not enough; ExecFence validates the binary SHA-256 and runs `execfence-helper self-test` before enforce mode can start.
 
 ## Project Layout
 
@@ -239,9 +264,31 @@ Important fields:
 - `fs.readAllow`, `fs.writeAllow`, `fs.deny`
 - `process.allow`, `process.deny`, `process.superviseChildren`
 - `network.default`, `network.allow`, `network.auditOnly`
-- `helper.path`, `helper.requiredForEnforce`
+- `helper.path`, `helper.requiredForEnforce`, `helper.requiredCapabilities`, `helper.minExecFenceVersion`
 
 ## Commands By Job
+
+### Common Command Reference
+
+These are the commands most users see first in the README, with the operational meaning spelled out.
+
+| Command | When to use it | What it does | What to look for |
+| --- | --- | --- | --- |
+| `npx --yes execfence --help` | When checking an installed version or onboarding a new project. | Prints grouped commands, options, and examples from the local CLI. | Confirm `run --sandbox`, `sandbox install-helper --binary`, and `helper audit` are present for v5 sandbox support. |
+| `npx --yes execfence scan` | Before running code from a repo, before review, or as a fast local check. | Scans source, package scripts, lockfiles, workflows, task files, agent/MCP configs, executables, archives, and configured signatures. | `OK` means no blocking finding was detected. A block includes finding id, file, severity, activation surface, and report path. |
+| `npx --yes execfence run -- npm test` | When you want to run a project command but keep preflight and post-run evidence. | Runs preflight scan, executes only if clean, records command/env/runtime trace, snapshots files, rescans changed files, and writes a JSON report. | Use the report to see what ran, what changed, whether postflight passed, and whether new executable artifacts appeared. |
+| `npx --yes execfence ci` | In CI/release review or before publishing. | Aggregates scan, manifest diff, dependency diff/review, coverage, config validation, pack audit, and trust audit. | `ok:false` means at least one release gate failed. Check `ci.configValidation`, `manifest.summary`, dependency findings, and `blockingSummary`. |
+| `npx --yes execfence deps review` | After dependency, manifest, lockfile, or package-manager command changes. | Reviews changed dependencies across npm/Bun/Yarn/pnpm, Python, Cargo, Go, JVM, NuGet, Composer, and Bundler. Adds metadata, reputation, integrity, source drift, lifecycle/build/runtime, and advisory findings. | Look for source/registry drift, git/path deps, recent packages, yanked/deprecated versions, missing integrity, OSV advisories, and runtime-audit requirements. |
+| `npx --yes execfence coverage` | When deciding whether project entrypoints are protected. | Inventories sensitive scripts/workflows/tasks/package-manager surfaces and checks whether each is directly guarded or otherwise covered. | `directGuarded` means the command itself invokes ExecFence. `covered` also counts package prehooks, workflow gates, and active global shims. |
+| `npx --yes execfence config validate` | Before CI/release, after config edits, or when adoption fails. | Validates `.execfence/config/execfence.json`, `baseline.json`, `signatures.json`, `sandbox.json`, and local policy packs. | Fix JSON parse errors, invalid regexes, expired baselines, allowlisted executables without hashes, suspicious registries, and strict-mode coverage gaps. |
+| `npx --yes execfence pack-audit` | Before `npm pack`, publish, handoff, or release artifact review. | Audits files that would be included in package output. | Watch for unexpected binaries, archives, executable configs, lifecycle hooks, or files that should not ship. |
+| `npx --yes execfence agent-report` | When agent/MCP/tooling config changes or before enabling coding agents. | Reviews agent instructions, MCP servers, tool manifests, and local automation surfaces. | Look for broad shell/filesystem/network/browser/credential access and instructions that try to bypass ExecFence/security checks. |
+| `npx --yes execfence run --sandbox-mode audit -- npm test` | When a command is risky but helper enforcement is unavailable or intentionally not required. | Runs the command normally while recording sandbox plan, helper/capability gaps, runtime trace, file changes, post-run scan, and report evidence. | Treat it as evidence only. It does not block network, filesystem reads, or child behavior at runtime. |
+| `npx --yes execfence run --sandbox -- npm test` | When hard enforcement is required. | Uses enforce mode. ExecFence validates the helper and, only if required capabilities are proven, delegates execution to `execfence-helper run --policy <policy.json> -- <command>`. | If helper proof is incomplete, the command blocks before execution. If the helper emits a `deny` event, the runtime report contains a blocking finding. |
+| `npx --yes execfence sandbox doctor` | Before using enforce mode or debugging why `--sandbox` blocked. | Reports platform, arch, helper install state, helper self-test, `helperVerified`, capability proof, unsupported capabilities, and missing enforce requirements. | `helperVerified:false` or non-empty `missingForEnforce` means enforce mode will block unless degraded mode is explicitly allowed. |
+| `npx --yes execfence sandbox plan -- npm test` | Before running a command under audit/enforce to understand policy impact. | Shows filesystem allow/deny, process allow/deny, network policy, helper proof, missing enforcement, decisions, and blocked operations for that command. | Use it to see whether a command will be audited, enforced, or blocked before running it. |
+| `npx --yes execfence sandbox install-helper --binary ./execfence-helper` | After building or downloading a reviewed helper binary. | Copies/registers the helper, computes SHA-256, writes helper metadata, runs self-test through `helper audit`, and returns proven/unsupported capabilities. | Install success does not mean every capability is enforced. Review `capabilityProof` and `unsupportedCapabilities`. |
+| `npx --yes execfence helper audit` | After helper install, after binary updates, or during CI/release checks. | Revalidates helper metadata, binary hash, platform/arch, provenance, self-test output, required capabilities, and limitations. | Metadata-only helpers fail. Hash mismatch, wrong platform, failed self-test, or missing capabilities prevent enforce mode. |
 
 ### Initialize
 
@@ -285,10 +332,21 @@ npx --yes execfence sandbox init
 npx --yes execfence sandbox doctor
 npx --yes execfence sandbox plan -- npm test
 npx --yes execfence sandbox explain
+npx --yes execfence sandbox install-helper --binary ./execfence-helper
+npx --yes execfence sandbox install-helper --metadata ./execfence-helper.json
+npx --yes execfence sandbox helper-audit
 npx --yes execfence helper audit
+npx --yes execfence run --sandbox-mode audit -- npm test
+npx --yes execfence run --sandbox -- npm test
 ```
 
-Audit mode records the plan and local capability matrix. Enforce mode requires actual enforcement support. Without a verified helper/capability, enforce mode blocks before execution.
+Audit mode records the plan, local capability matrix, runtime trace, file snapshot, post-run scan, and report evidence. It does not contain the process.
+
+Enforce mode delegates execution to `execfence-helper run --policy <policy.json> -- <command>`. ExecFence first validates the helper metadata, binary SHA-256, platform, arch, provenance, and `execfence-helper self-test` result. Without a verified helper binary, matching SHA-256, successful self-test, and enforced required capabilities, enforce mode blocks before execution.
+
+The helper emits JSONL events for `spawn`, `deny`, `allow`, `network`, `filesystem`, `process`, `child`, `newExecutable`, and `exit`. Deny events become blocking findings in the runtime report. Windows and Linux are the v5 helper targets; other platforms remain explicit unsupported for enforce.
+
+Current unprivileged helper proof is intentionally narrow: root process supervision, Windows Job Object or Linux process-group child handling, and new executable artifact detection. Filesystem pre-read denial, sensitive-read denial, and outbound network blocking are reported as unsupported unless a real platform broker/elevated capability proves them. Strict/enforce blocks unsupported required capabilities instead of silently downgrading.
 
 ### Coverage And Wiring
 
@@ -303,7 +361,7 @@ npx --yes execfence guard disable
 npx --yes execfence guard status
 ```
 
-`coverage` finds execution entrypoints that are not protected by `execfence run` or equivalent guardrails. `wire` suggests or applies wrappers.
+`coverage` finds execution entrypoints that are not protected by `execfence run` or equivalent guardrails. `wire` suggests or applies wrappers. Coverage evidence uses two separate fields: `directGuarded` means the entrypoint command itself invokes ExecFence; `covered` also counts package prehooks, workflow-level gates, inherited guardrails, and active global package-manager shims. `ci` uses `covered/uncovered` for operational risk and keeps `directGuarded` visible for release review.
 
 `guard` is the automatic project mode. It runs `init`, checks coverage, applies wiring, installs project-local agent rules, and summarizes remaining gaps. Global guard mode installs reversible package-manager shims:
 
@@ -313,7 +371,7 @@ npx --yes execfence guard global-enable
 npx --yes execfence guard global-disable
 ```
 
-It installs skill/defaults, global agent rules, and `npm`/`npx`/`pnpm`/`yarn`/`yarnpkg`/`bun`/`bunx` shims under `<home>/.execfence/shims/`. Marked shell-profile blocks put that directory before the real package managers in PATH, so terminal commands and agent-run commands pass through ExecFence first. `global-disable` removes the shims and marked profile blocks without deleting reports, config, trust stores, cache, or quarantine metadata.
+It installs skill/defaults, global agent rules, and supported package-manager shims under `<home>/.execfence/shims/`. Marked shell-profile blocks put that directory before the real package managers in PATH, so terminal commands and agent-run commands pass through ExecFence first. `guard global-status` and the post-install result include an `actionPlan` for missing shims, inactive PATH, current-shell reload, Corepack/nvm/Volta/asdf path ordering, CI/container/IDE interception, and the command to apply the shim path in the current session. `global-disable` removes the shims and marked profile blocks without deleting reports, config, trust stores, cache, or quarantine metadata.
 
 Install-like commands such as `npm install`, `pnpm add`, `yarn install`, `bun add`, `ci`, `update`, and `rebuild` run after a clean preflight scan and guarded dependency review. npm and Bun use `--ignore-scripts=true`, pnpm uses `--ignore-scripts`, Yarn 1 uses `--ignore-scripts=true`, and Yarn 2+ runs with `YARN_ENABLE_SCRIPTS=0`. Commands that intentionally run scripts, such as `run`, `test`, `start`, `pack`, and `publish`, keep normal package-manager behavior after the scan passes.
 
@@ -325,6 +383,18 @@ npx --yes execfence manifest diff
 ```
 
 The manifest records execution surfaces such as package scripts, Makefiles, workflows, VS Code tasks, hooks, language build files, and agent rules.
+
+`manifest.summary` reports `total`, `sensitive`, `directGuarded`, `covered`, and `uncovered`. A release can therefore show `directGuarded < total` while still being operationally OK when every sensitive entrypoint is covered by a prehook, workflow gate, or global shim.
+
+### Config Validation
+
+```sh
+npx --yes execfence config validate
+npx --yes execfence config validate --format json
+npx --yes execfence config validate --strict
+```
+
+Config validation checks `.execfence/config/execfence.json`, `baseline.json`, `signatures.json`, `sandbox.json`, and local policy packs. It catches invalid regex signatures, expired baselines, executable allowlist entries without SHA-256, suspicious registry allowlists, sandbox enforce settings that would silently degrade, and strict supply-chain mode without complete coverage. `ci` runs config validation by default.
 
 ### Supply Chain
 
@@ -338,7 +408,7 @@ npx --yes execfence trust add tools/reviewed-helper.exe --reason "reviewed helpe
 npx --yes execfence trust audit
 ```
 
-These commands catch suspicious dependency drift, dangerous packaged files, unreviewed registries/actions/package scopes, and changed trusted artifacts. `deps review` aggregates `package-lock.json`, `pnpm-lock.yaml`, and `yarn.lock`, then adds guarded npm metadata and reputation for new or changed packages: release cooldown, deprecation/security messaging, registry/source, integrity, provenance/signature hints, OSV advisory records, lifecycle/bin hints, and recommended actions.
+These commands catch suspicious dependency drift, dangerous packaged files, unreviewed registries/actions/package scopes, and changed trusted artifacts. `deps review` aggregates supported manifests and lockfiles across JavaScript, Python, Rust, Go, JVM, .NET, PHP, and Ruby, then adds guarded metadata and reputation for new or changed packages: release cooldown, deprecation/security messaging, registry/source, integrity/checksum hints, provenance/signature hints where available, OSV advisory records, lifecycle/build/runtime hints, and recommended actions.
 
 Metadata and reputation lookup is deliberately privacy-safe by default. It only queries allowlisted public registries, skips scoped packages unless `supplyChain.metadata.allowedPublicScopes` allows the scope, never uses npm tokens or `.npmrc` auth, caches under `.execfence/cache/`, caps packages per run, and treats network failure as a warning unless configured otherwise. The review also checks package age, recent metadata changes, maintainer presence, integrity, provenance/signature hints, package tarball content, and tarball delta against the previous resolved version when available.
 
@@ -360,7 +430,7 @@ For runtime-only dependency risk, attach changed-dependency review and sandbox c
 npx --yes execfence run --dependency-behavior-audit --sandbox-mode audit -- npm test
 ```
 
-This does not prove library code safe, but it records whether a test/build/start command that may import changed dependencies ran with network/process/filesystem containment or with degraded local enforcement. Runtime behavior risk is closed only when `--sandbox` uses a verified helper that declares outbound network blocking, sensitive path reads, child-process supervision, and new executable/archive blocking; `--sandbox-mode audit` is evidence, not prevention.
+This does not prove library code safe, but it records whether a test/build/start command that may import changed dependencies ran with network/process/filesystem containment or with degraded local enforcement. Runtime behavior risk is closed only when `--sandbox` uses a verified helper whose self-test proves the required outbound network blocking, sensitive-read denial, child-process supervision, and new executable/archive blocking. Unsupported capabilities remain blocking in strict/enforce; `--sandbox-mode audit` is evidence, not prevention.
 
 ### When Dependency Metadata Blocks Or Warns
 
@@ -413,6 +483,7 @@ Reports are JSON-first and timestamped. A report includes:
 - git branch and commit
 - effective config
 - summary counts
+- blocking summary with why blocked, how it can execute, affected ecosystem, activation surface, and next action
 - findings with file, line, snippet, SHA-256, rule, remediation, confidence
 - git blame and recent commits when available
 - local analysis and suggested research queries

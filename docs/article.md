@@ -77,7 +77,7 @@ Hard sandbox enforcement is explicit:
 npx --yes execfence run --sandbox -- npm test
 ```
 
-If the platform or helper cannot enforce filesystem, process, or network policy, ExecFence blocks before execution. It does not silently downgrade `--sandbox` to audit mode.
+If the platform or helper cannot enforce the required filesystem, process-tree, sensitive-read, new-executable, or network policy, ExecFence blocks before execution. It does not silently downgrade `--sandbox` to audit mode. Metadata-only helpers do not count; enforce mode requires a helper binary with matching SHA-256 and a successful `execfence-helper self-test`.
 
 ## If ExecFence Blocks
 
@@ -174,7 +174,7 @@ npx --yes execfence guard enable --apply
 
 The first command is a dry-run. The second writes reversible project-local changes. Use `npx --yes execfence guard disable` to remove generated wrappers and marked agent rules while preserving evidence and configuration.
 
-For terminal and agent-run package-manager commands, use global guard mode. It installs reversible `npm`/`npx`/`pnpm`/`yarn`/`yarnpkg`/`bun`/`bunx` shims so raw commands such as `npm test`, `pnpm add`, `yarn install`, and `bun add` pass through ExecFence before the real package manager starts.
+For terminal and agent-run package-manager commands, use global guard mode. It installs reversible shims for npm/pnpm/yarn/Bun, Python, Cargo, Go, Maven/Gradle, dotnet/NuGet, Composer, and Bundler so raw commands such as `npm test`, `pnpm add`, `pip install`, `cargo test`, `go get`, and `composer require` pass through ExecFence before the real package manager starts.
 
 ### The Codex/Agent Skill
 
@@ -275,7 +275,7 @@ Dependency-free also helps in CI and incident response:
 - easier `npm pack --dry-run` review
 - simpler use in temporary or suspicious workspaces
 
-Optional helpers may exist for future platform enforcement, but the base scanner, runtime gate, reports, CI command, and skill remain usable without mandatory helper installation.
+ExecFence v5 introduces a real helper contract for Windows and Linux. The base scanner, runtime gate, reports, CI command, and skill remain usable without mandatory helper installation, but enforce mode only runs through a verified helper binary that passes `execfence-helper self-test`. Metadata-only helpers do not enable enforcement.
 
 ## What The Scanner Inspects
 
@@ -285,8 +285,9 @@ It inspects:
 
 - JavaScript/TypeScript executable configs
 - package scripts and lifecycle hooks
-- npm/pnpm/yarn/bun lockfiles
-- Cargo, Go, Poetry, and uv lockfiles
+- npm/pnpm/yarn/bun lockfiles and manifests
+- Python requirements, pyproject, Poetry, and uv lockfiles
+- Cargo, Go, Maven/Gradle, NuGet, Composer, and Bundler manifests/lockfiles
 - GitHub Actions workflows
 - `.vscode/tasks.json`
 - Makefiles
@@ -317,6 +318,16 @@ For the full technical detection breakdown, including baselines and exceptions, 
 ExecFence does not claim campaign attribution. It turns the lessons from those incidents into local controls around execution.
 
 ## Main Functional Areas
+
+### What Version 5 Adds
+
+Version 5 is the release that combines multi-ecosystem supply-chain coverage with the first real platform-helper sandbox contract.
+
+The supply-chain expansion is no longer npm-only. ExecFence now understands package-manager and runtime surfaces across npm/pnpm/Yarn/Bun, Python, Rust/Cargo, Go, JVM, .NET/NuGet, Composer/PHP, and Bundler/Ruby. That means `deps diff`, `deps review`, `ci`, `coverage`, `manifest`, `wire`, global package-manager shims, runtime dependency behavior audit, and reports all consume the same ecosystem adapter layer instead of treating non-npm ecosystems as partial side cases.
+
+The sandbox expansion is helper-backed. Enforce mode does not trust a config flag or metadata declaration. It requires a real Windows/Linux helper binary, hash verification, platform/arch match, provenance metadata, and a successful `execfence-helper self-test`. Only then can `execfence run --sandbox -- <command>` delegate execution to `execfence-helper run --policy <policy.json> -- <command>`.
+
+Version 5 keeps the same non-claim: ExecFence does not prove arbitrary third-party code benign. It blocks and records observable execution surfaces, dependency drift, helper capability proof, and runtime evidence. If a capability cannot be proven on the current host, it is reported as unsupported and strict/enforce blocks.
 
 ### Essential Commands
 
@@ -373,6 +384,8 @@ npx --yes execfence run --record-artifacts --deny-on-new-executable -- npm test
 npx --yes execfence sandbox init
 npx --yes execfence sandbox doctor
 npx --yes execfence sandbox plan -- npm test
+npx --yes execfence sandbox install-helper --binary ./execfence-helper
+npx --yes execfence helper audit
 npx --yes execfence run --sandbox-mode audit -- npm test
 ```
 
@@ -384,7 +397,17 @@ Enforce mode is explicit:
 npx --yes execfence run --sandbox -- npm test
 ```
 
-If enforcement is unavailable, the command blocks before running. Downgrade requires explicit `--sandbox-mode audit` or `--allow-degraded`.
+If enforcement is unavailable, the command blocks before running. Downgrade requires explicit `--sandbox-mode audit` or `--allow-degraded`. In enforce mode, ExecFence writes a policy JSON and delegates execution to `execfence-helper run --policy <policy.json> -- <command>`; the helper emits JSONL events for spawn, deny, filesystem, process, network, new executable, and exit evidence.
+
+The v5 helper contract is deliberately evidence-driven:
+
+- `sandbox doctor` reports `helperVerified`, capability proof, unsupported capabilities, and the next action.
+- `install-helper --binary` registers a local helper binary, computes SHA-256, and immediately runs helper audit.
+- `helper audit` fails metadata-only helpers and helpers whose self-test cannot prove required capabilities.
+- `run --sandbox` uses the helper as the process launcher; deny events become blocking findings.
+- Windows and Linux are the v5 targets. Other platforms stay unsupported for enforce.
+
+The current unprivileged helper proves process supervision, Windows Job Object or Linux process-group child handling, and new executable artifact detection. Filesystem pre-read denial, sensitive-read denial, and outbound network blocking require a real platform broker/elevated capability before ExecFence will claim them.
 
 ### Execution Manifest And Coverage
 
@@ -425,7 +448,7 @@ to:
 execfence run -- npm test
 ```
 
-`guard enable` is the recommended high-level entrypoint for project adoption. It runs `init`, checks coverage, applies wrappers, installs project-local agent rules, and reports remaining gaps. Global guard mode installs reversible npm/pnpm/yarn/bun shims:
+`guard enable` is the recommended high-level entrypoint for project adoption. It runs `init`, checks coverage, applies wrappers, installs project-local agent rules, and reports remaining gaps. Global guard mode installs reversible package-manager shims:
 
 ```sh
 npx --yes execfence guard global-status
@@ -433,7 +456,7 @@ npx --yes execfence guard global-enable
 npx --yes execfence guard global-disable
 ```
 
-It installs skill/defaults, global agent rules, and marked shell-profile PATH blocks for `<home>/.execfence/shims/`. Terminal and agent-run npm, pnpm, Yarn, and Bun commands enter ExecFence before the real package manager starts. Install-like commands get a clean preflight scan, guarded dependency metadata/reputation/tarball review, and lifecycle-script suppression; script-running commands keep normal package-manager behavior after the scan passes.
+It installs skill/defaults, global agent rules, and marked shell-profile PATH blocks for `<home>/.execfence/shims/`. Terminal and agent-run package-manager commands enter ExecFence before the real package manager starts. `guard global-status` returns an `actionPlan` for inactive PATH, missing shims, current-shell reload, Corepack/nvm/Volta/asdf ordering, and CI/container/IDE surfaces that still need explicit wrapping. Install-like commands get a clean preflight scan and guarded dependency metadata/reputation/tarball review. npm-like managers also get lifecycle-script suppression; ecosystems without a universal suppression flag rely on runtime behavior audit, sandbox evidence, and strict-mode blocking when containment is missing.
 
 ### Supply Chain And Package Audit
 
@@ -509,6 +532,8 @@ npx --yes execfence pr-comment --report .execfence/reports/<report>.json
 
 Use them for CI output, PR review, lockfile investigation, package publishing checks, report comparison, and team adoption.
 
+`coverage`, `manifest`, and `ci` share coverage evidence. `directGuarded` means the command invokes ExecFence itself; `covered` also includes package prehooks, workflow gates, inherited guards, and active global shims.
+
 ## Evidence Reports
 
 Every blocking-capable command writes a new JSON report under:
@@ -524,6 +549,7 @@ Reports include:
 - git branch and commit
 - effective config
 - total, blocked, warning, and suppressed findings
+- blocking summary with why blocked, how it can execute, affected ecosystem, activation surface, and next action
 - finding id, severity, file, line, snippet, SHA-256
 - rule, reason, remediation, and confidence
 - git blame and recent commits when available
@@ -567,6 +593,14 @@ Important files:
 
 Reports are gitignored by default. A project can opt into versioning reports with `reportsGitignore: false`.
 
+Validate policy before release:
+
+```sh
+npx --yes execfence config validate --strict
+```
+
+This checks ExecFence config, baselines, signatures, sandbox policy, and local policy packs. Invalid regexes, expired strict baselines, unpinned executable allowlist entries in strict mode, suspicious registry allowlists, and strict supply-chain mode without complete coverage fail validation.
+
 For scanner internals, rule layers, and exception policy, continue to the [Detection Model](./detection).
 
 ## Recommended Adoption Path
@@ -599,7 +633,10 @@ For higher-risk local execution:
 ```sh
 npx --yes execfence sandbox doctor
 npx --yes execfence sandbox plan -- npm test
+npx --yes execfence sandbox install-helper --binary ./execfence-helper
+npx --yes execfence helper audit
 npx --yes execfence run --sandbox-mode audit -- npm test
+npx --yes execfence run --sandbox -- npm test
 ```
 
 ## Design Principles

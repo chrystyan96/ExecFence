@@ -21,8 +21,9 @@ ExecFence inspects:
 
 - JavaScript/TypeScript executable configs
 - package scripts and lifecycle hooks
-- npm/pnpm/yarn/bun lockfiles
-- Cargo, Go, Poetry, and uv lockfiles
+- npm/pnpm/yarn/bun lockfiles and manifests
+- Python requirements, pyproject, Poetry, and uv lockfiles
+- Cargo, Go, Maven/Gradle, NuGet, Composer, and Bundler manifests/lockfiles
 - GitHub Actions workflows
 - `.vscode/tasks.json`
 - Makefiles
@@ -71,7 +72,7 @@ The scanner does not flag every minified file. It focuses on executable project 
 
 Package scripts are treated differently depending on whether they execute automatically. Install-time hooks such as `preinstall`, `install`, `postinstall`, and `prepare` are high-value attacker surfaces because package managers can run them during dependency installation or publication workflows.
 
-When global package-manager guard is enabled, terminal and agent-run `npm`/`npx`/`pnpm`/`yarn`/`yarnpkg`/`bun`/`bunx` commands pass through ExecFence before the real tool starts. Install-like commands are delegated with lifecycle scripts disabled after a clean scan and guarded dependency review: npm and Bun use `--ignore-scripts=true`, pnpm uses `--ignore-scripts`, Yarn 1 uses `--ignore-scripts=true`, and Yarn 2+ receives `YARN_ENABLE_SCRIPTS=0`.
+When global package-manager guard is enabled, terminal and agent-run package-manager commands pass through ExecFence before the real tool starts. This includes npm/pnpm/yarn/Bun, Python package managers, Cargo, Go, Maven/Gradle, dotnet/NuGet, Composer, and Bundler. Install-like commands are delegated with lifecycle scripts disabled only where the package manager exposes a reliable suppression flag: npm and Bun use `--ignore-scripts=true`, pnpm uses `--ignore-scripts`, Yarn 1 uses `--ignore-scripts=true`, and Yarn 2+ receives `YARN_ENABLE_SCRIPTS=0`. Other ecosystems are protected by preflight scan, dependency review, runtime behavior audit, sandbox evidence, and strict-mode blocking when containment is missing.
 
 ExecFence looks for risky behavior such as:
 
@@ -83,6 +84,10 @@ ExecFence looks for risky behavior such as:
 - Windows LOLBins and script hosts such as `bitsadmin`, `Start-BitsTransfer`, `mshta`, `rundll32`, and `regsvr32`
 - suspicious binary launch paths
 - install hooks in local packages/workspaces
+- Python `setup.py`/build-backend execution
+- Rust `build.rs` execution
+- Go `go generate` directives
+- Composer and Bundler script execution
 
 ### Lockfile Source Audit
 
@@ -100,7 +105,7 @@ The goal is not to replace dependency vulnerability scanning. It is to catch dep
 
 ### Guarded Dependency Metadata Review
 
-`execfence deps review` adds supply-chain metadata, reputation, and tarball checks to changed npm, pnpm, and yarn dependencies. It aggregates `package-lock.json`, `pnpm-lock.yaml`, and `yarn.lock`, then reports package manager, lockfile, package name/version, change type, registry/source, integrity, lifecycle/bin hints, metadata status, reputation status, tarball status, tarball delta status, privacy status, findings, and recommended actions.
+`execfence deps review` adds supply-chain metadata, reputation, and tarball checks to changed dependencies across supported ecosystems. It aggregates npm/pnpm/yarn/Bun, Python, Cargo, Go, Maven/Gradle, NuGet, Composer, and Bundler manifests/lockfiles, then reports package manager, lockfile, package name/version, change type, registry/source, integrity/checksum hints, lifecycle/build/runtime hints, metadata status, reputation status, tarball status, tarball delta status, privacy status, findings, and recommended actions.
 
 The metadata/reputation layer is intentionally scoped to supply-chain flows, not every static scan. It runs from `deps review`, the CLI `deps diff` path, `ci`, and global guard install-like commands. It only checks new or changed packages or explicit package specs, skips scoped packages unless allowlisted, skips non-allowlisted registries, never reads npm auth tokens, caches under `.execfence/cache/`, applies short timeouts and package-count limits, and fails open on network errors by default.
 
@@ -116,9 +121,9 @@ Strong signals can block in guarded mode:
 - metadata lookup failure only when `supplyChain.metadata.networkFailure` is set to `block`
 - unavailable metadata/reputation/tarball signals, cooldowns, new package age windows, missing integrity/provenance, uncovered package-manager surfaces, and missing helper-backed runtime containment when `supplyChain.mode` is `strict`
 
-This still does not prove that ordinary library code is safe. Runtime-only malicious behavior that appears only after an application imports or bundles a compromised dependency remains a limitation unless surrounding metadata, scripts, artifacts, lockfile drift, tarball content/delta, reputation feeds, helper-backed runtime enforcement, or runtime evidence expose it.
+This still does not prove that ordinary library code is safe. Runtime-only malicious behavior that appears only after an application imports, builds, generates, or bundles a compromised dependency remains a limitation unless surrounding metadata, scripts, artifacts, lockfile drift, tarball content/delta, reputation feeds, helper-backed runtime enforcement, or runtime evidence expose it. For Go specifically, direct `go.mod`/`go.sum` edits and `go get`/`go install pkg@version` are reviewed, while `go run`, `go build`, `go install`, `go test`, and high-risk `go generate` enter dependency behavior audit when changed modules are present.
 
-Use `execfence run --dependency-behavior-audit --sandbox-mode audit -- <command>` when a test/build/start command may import changed dependencies. The runtime report records the changed-dependency review, sandbox containment status, degraded network/process/filesystem enforcement, generated executable artifacts, and post-run scan evidence.
+Use `execfence run --dependency-behavior-audit --sandbox-mode audit -- <command>` when a test/build/start command may import changed dependencies. The runtime report records the changed-dependency review, sandbox containment status, degraded network/process/filesystem enforcement, generated executable artifacts, and post-run scan evidence. In enforce mode, v5 requires a verified Windows/Linux helper self-test and executes through `execfence-helper run`; unsupported capabilities remain blocking instead of being treated as protection.
 
 ### Executable And Archive Artifacts
 
@@ -138,6 +143,21 @@ ExecFence flags unexpected binaries and archives in source/build-input folders:
 - platform shared libraries and other executable-like artifacts
 
 Reviewed artifacts should be pinned by SHA-256 through config or trust stores, with a reason and owner.
+
+### Multi-Ecosystem Execution Fixtures
+
+ExecFence treats dependency managers and build systems as activation surfaces, not only as parsers. The scanner blocks high-confidence install/build/generate/run signals across supported ecosystems:
+
+- npm/pnpm/yarn/Bun lifecycle scripts with download cradles, encoded PowerShell, pipe-to-shell, native artifact drops, or credential access combined with process/network behavior
+- Python `setup.py` and build metadata that invoke shell, subprocess, dynamic code, or download behavior
+- Rust `build.rs` with process execution, shell/download behavior, embedded artifacts, or generated-output paths
+- Go `go generate` directives that invoke shell, downloaders, package managers, or interpreters
+- Maven/Gradle repository or plugin drift plus build logic that launches processes or downloaders
+- NuGet restore/build sources over HTTP, local paths, raw/paste hosts, or other suspicious sources
+- Composer scripts with shell/PHP dynamic execution
+- Bundler git/path gems or suspicious non-registry sources
+
+Credential-only references are warnings by default. They become blocking when combined with network, shell, process, or download behavior because that is the point where token exposure becomes credible exfiltration risk.
 
 ### Workflow Hardening
 
@@ -224,4 +244,4 @@ ExecFence is intentionally conservative about what it claims:
 - It can preserve evidence when a command blocks.
 - It can make agents prefer safer command execution.
 
-It cannot prove arbitrary code is safe, replace EDR/AV, or provide hard sandbox isolation without platform/helper support.
+It cannot prove arbitrary code is safe or replace EDR/AV. Hard sandbox isolation requires a verified platform helper with self-tested capabilities; metadata-only helper declarations do not count.

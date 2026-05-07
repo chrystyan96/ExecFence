@@ -166,9 +166,9 @@
         "baseRef": { "type": "string", "default": "HEAD" },
         "checks": {
           "type": "array",
-          "items": { "enum": ["scan", "manifest-diff", "deps-diff", "pack-audit", "trust-audit"] },
+          "items": { "enum": ["scan", "manifest-diff", "deps-diff", "coverage", "config-validate", "pack-audit", "trust-audit"] },
           "uniqueItems": true,
-          "default": ["scan", "manifest-diff", "deps-diff", "pack-audit", "trust-audit"]
+          "default": ["scan", "manifest-diff", "deps-diff", "coverage", "config-validate", "pack-audit", "trust-audit"]
         }
       }
     },
@@ -210,7 +210,7 @@
             "allowedRegistries": {
               "type": "array",
               "items": { "type": "string" },
-              "default": ["registry.npmjs.org"]
+              "default": ["registry.npmjs.org", "pypi.org", "files.pythonhosted.org", "crates.io", "proxy.golang.org", "repo.maven.apache.org", "plugins.gradle.org", "api.nuget.org", "repo.packagist.org", "rubygems.org"]
             },
             "allowedPublicScopes": {
               "type": "array",

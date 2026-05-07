@@ -31,8 +31,11 @@ test('help output lists grouped public commands with descriptions', () => {
   assert.match(output, /Agent integration:/);
   assert.match(output, /Setup:/);
   assert.match(output, /execfence guard global-enable/);
-  assert.match(output, /Install global skill\/rules plus reversible npm\/pnpm\/yarn shims\./);
+  assert.match(output, /Install global skill\/rules plus reversible multi-ecosystem package-manager shims\./);
   assert.match(output, /execfence deps review/);
+  assert.match(output, /--sandbox enforce requires a verified helper/);
+  assert.match(output, /execfence sandbox install-helper \[--metadata <file>\|--binary <file>\]\|uninstall-helper\|helper-audit/);
+  assert.match(output, /Manage or audit verified platform helper metadata and binaries\./);
 });
 
 test('help subcommand matches --help output', () => {
