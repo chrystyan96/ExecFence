@@ -55,6 +55,9 @@
         "mode": { "enum": ["audit", "enforce"] },
         "profile": { "enum": ["test", "build", "dev", "pack", "publish", "strict"] },
         "capabilities": { "type": "object" },
+        "helperVerified": { "type": "boolean" },
+        "capabilityProof": { "type": "array" },
+        "unsupportedCapabilities": { "type": "array", "items": { "type": "string" } },
         "blockedOperations": { "type": "array" },
         "missingCapabilities": { "type": "array", "items": { "type": "string" } }
       }
@@ -62,6 +65,22 @@
     "config": { "type": "object" },
     "manifest": { "type": ["object", "null"] },
     "changeRisk": { "type": "object" },
+    "blockingSummary": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "status": { "enum": ["ok", "review", "blocked"] },
+        "primaryCause": { "type": ["string", "null"] },
+        "file": { "type": ["string", "null"] },
+        "command": { "type": ["string", "null"] },
+        "activationSurface": { "type": ["string", "null"] },
+        "threatCategory": { "type": ["string", "null"] },
+        "affectedEcosystem": { "type": ["string", "null"] },
+        "whyBlocked": { "type": "string" },
+        "howItCanExecute": { "type": "string" },
+        "recommendedNextAction": { "type": "string" }
+      }
+    },
     "summary": {
       "type": "object",
       "required": ["ok", "totalFindings", "blockedFindings", "warningFindings", "suppressedFindings"],
@@ -89,6 +108,8 @@
           "snippet": { "type": "string" },
           "sha256": { "type": ["string", "null"] },
           "rule": { "type": "object" },
+          "threatCategory": { "type": "string" },
+          "activationSurface": { "type": "string" },
           "analysis": { "type": "object" },
           "research": { "type": "object" }
         }

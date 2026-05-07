@@ -1,7 +1,7 @@
 {
   "name": "execfence",
-  "version": "4.0.1",
-  "description": "Guard npm/pnpm/yarn/Bun installs, dependency changes, CI, and agent-run commands before suspicious project code executes.",
+  "version": "5.0.0",
+  "description": "Guard package-manager installs, dependency changes, CI, and agent-run commands before suspicious project code executes.",
   "license": "Apache-2.0",
   "author": "Chrystyan Byrnes",
   "type": "commonjs",
@@ -12,6 +12,7 @@
     "bin/",
     "docs/",
     "examples/",
+    "helper/",
     "lib/",
     "schema/",
     "skill/",
@@ -22,6 +23,8 @@
   "scripts": {
     "pretest": "npm run scan",
     "test": "node --test",
+    "helper:test": "cd helper && go test ./...",
+    "helper:build": "cd helper && go build -o ../.execfence/cache/execfence-helper-local.exe ./cmd/execfence-helper",
     "scan": "node bin/execfence.js scan .",
     "coverage:execfence": "node bin/execfence.js coverage",
     "pr:check": "npm test && npm run scan",

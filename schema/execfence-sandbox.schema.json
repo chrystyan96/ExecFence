@@ -43,6 +43,13 @@
       "additionalProperties": true,
       "properties": {
         "path": { "type": "string" },
+        "schemaVersion": { "type": ["integer", "string"] },
+        "version": { "type": "string" },
+        "platform": { "type": "string" },
+        "arch": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
+        "provenance": { "type": "string" },
+        "minExecFenceVersion": { "type": "string" },
         "requiredForEnforce": { "type": "boolean" },
         "requiredCapabilities": {
           "type": "array",

@@ -28,9 +28,15 @@ A weekly release is relevant when it contains:
 
 Public changes to CLI commands, config, schemas, reports, or documented behavior must update the matching user-facing docs and tests in the same PR.
 
+Release review must compare `coverage`, `manifest`, and `ci` using the shared evidence fields. `covered` is the operational gate; `directGuarded` is release-review evidence that shows which entrypoints invoke ExecFence directly versus relying on a workflow gate, package prehook, inherited guard, or global shim.
+
 ## Documentation Policy
 
 Every PR or update must explicitly review documentation impact. Public changes to CLI commands, config, schemas, reports, workflows, skills, agent rules, or documented behavior must update the matching docs in the same PR.
+
+Before release, run `execfence config validate --strict` and review the latest report `blockingSummary`. Do not ship a command that says OK while another report shows an unexplained uncovered surface.
+
+For v5 sandbox releases, also build and smoke-test the Go helper for Windows and Linux. Enforce mode is releasable only when every claimed helper capability is backed by self-test evidence; unsupported capabilities must appear in `sandbox doctor`, reports, and strict-mode blocks rather than being documented as protection.
 
 `README.md` is the primary GitHub and npm entrypoint. Review it for every update, and update it whenever a change adds or changes a user-visible feature, command, workflow, positioning, or usage path. If `README.md` does not change, the PR or release checklist must state why: either the change has no public behavior impact, or the existing README already covers it.
 
