@@ -287,7 +287,7 @@ These are the commands most users see first in the README, with the operational 
 | `npx --yes execfence run --sandbox -- npm test` | When hard enforcement is required. | Uses enforce mode. ExecFence validates the helper and, only if required capabilities are proven, delegates execution to `execfence-helper run --policy <policy.json> -- <command>`. | If helper proof is incomplete, the command blocks before execution. If the helper emits a `deny` event, the runtime report contains a blocking finding. |
 | `npx --yes execfence sandbox doctor` | Before using enforce mode or debugging why `--sandbox` blocked. | Reports platform, arch, helper install state, helper self-test, `helperVerified`, capability proof, unsupported capabilities, and missing enforce requirements. | `helperVerified:false` or non-empty `missingForEnforce` means enforce mode will block unless degraded mode is explicitly allowed. |
 | `npx --yes execfence sandbox plan -- npm test` | Before running a command under audit/enforce to understand policy impact. | Shows filesystem allow/deny, process allow/deny, network policy, helper proof, missing enforcement, decisions, and blocked operations for that command. | Use it to see whether a command will be audited, enforced, or blocked before running it. |
-| `npx --yes execfence sandbox install-helper --binary ./execfence-helper` | After building or downloading a reviewed helper binary. | Copies/registers the helper, computes SHA-256, writes helper metadata, runs self-test through `helper audit`, and returns proven/unsupported capabilities. | Install success does not mean every capability is enforced. Review `capabilityProof` and `unsupportedCapabilities`. |
+| `npx --yes execfence sandbox install-helper --binary ./path/to/execfence-helper` | After building or downloading a reviewed helper binary. | Copies/registers the helper, computes SHA-256, writes helper metadata, runs self-test through `helper audit`, and returns proven/unsupported capabilities. | Install success does not mean every capability is enforced. Review `capabilityProof` and `unsupportedCapabilities`. |
 | `npx --yes execfence helper audit` | After helper install, after binary updates, or during CI/release checks. | Revalidates helper metadata, binary hash, platform/arch, provenance, self-test output, required capabilities, and limitations. | Metadata-only helpers fail. Hash mismatch, wrong platform, failed self-test, or missing capabilities prevent enforce mode. |
 
 ### Initialize
@@ -332,7 +332,7 @@ npx --yes execfence sandbox init
 npx --yes execfence sandbox doctor
 npx --yes execfence sandbox plan -- npm test
 npx --yes execfence sandbox explain
-npx --yes execfence sandbox install-helper --binary ./execfence-helper
+npx --yes execfence sandbox install-helper --binary ./path/to/execfence-helper
 npx --yes execfence sandbox install-helper --metadata ./execfence-helper.json
 npx --yes execfence sandbox helper-audit
 npx --yes execfence helper audit
@@ -341,6 +341,8 @@ npx --yes execfence run --sandbox -- npm test
 ```
 
 Audit mode records the plan, local capability matrix, runtime trace, file snapshot, post-run scan, and report evidence. It does not contain the process.
+
+The npm package ships helper source under `helper/` for review and local builds, not a prebuilt trusted helper binary. A global or `npx` install does not automatically enable sandbox enforce mode. Build or obtain a reviewed Windows/Linux helper binary first, then register that exact file with `sandbox install-helper --binary`.
 
 Enforce mode delegates execution to `execfence-helper run --policy <policy.json> -- <command>`. ExecFence first validates the helper metadata, binary SHA-256, platform, arch, provenance, and `execfence-helper self-test` result. Without a verified helper binary, matching SHA-256, successful self-test, and enforced required capabilities, enforce mode blocks before execution.
 
