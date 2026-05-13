@@ -182,6 +182,8 @@ The scanner and `agent-report` watch for:
 - MCP configs added or changed in a diff
 - agent instructions that tell tools to skip, disable, ignore, or bypass ExecFence/security checks
 
+`execfence scan` audits committed MCP/tool configs directly. For agent instruction files such as `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, Copilot instructions, and `.clinerules`, scan blocks explicit attempts to skip, disable, ignore, or bypass ExecFence/security checks while avoiding noisy blocks for ordinary operational wording. `execfence agent-report` keeps the broader changed-file review for shell, filesystem, network, browser, and credential-capable agent surfaces.
+
 This is useful because agents can execute commands faster than a human can review each one.
 
 ## Baselines And Exceptions
