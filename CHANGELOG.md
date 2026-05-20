@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v5.0.1 - 2026-05-20
+
 - Extended `execfence scan` to audit committed MCP/tool configs and agent instructions that try to bypass ExecFence or security scans.
 - Removed an injected obfuscated CLI loader residue caught by ExecFence's own scan gate.
 
