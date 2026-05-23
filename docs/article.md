@@ -172,7 +172,7 @@ npx --yes execfence guard enable
 npx --yes execfence guard enable --apply
 ```
 
-The first command is a dry-run. The second writes reversible project-local changes. Use `npx --yes execfence guard disable` to remove generated wrappers and marked agent rules while preserving evidence and configuration.
+The first command is a dry-run. The second writes reversible project-local changes. Use `npx --yes execfence guard disable` to preview removal, then `npx --yes execfence guard disable --apply` to remove generated wrappers and marked agent rules while preserving evidence and configuration.
 
 For terminal and agent-run package-manager commands, use global guard mode. It installs reversible shims for npm/pnpm/yarn/Bun, Python, Cargo, Go, Maven/Gradle, dotnet/NuGet, Composer, and Bundler so raw commands such as `npm test`, `pnpm add`, `pip install`, `cargo test`, `go get`, and `composer require` pass through ExecFence before the real package manager starts.
 
@@ -435,6 +435,7 @@ npx --yes execfence wire --apply
 npx --yes execfence guard enable
 npx --yes execfence guard enable --apply
 npx --yes execfence guard disable
+npx --yes execfence guard disable --apply
 npx --yes execfence guard status
 ```
 
