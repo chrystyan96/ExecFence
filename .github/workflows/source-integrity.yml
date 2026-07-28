@@ -1,0 +1,63 @@
+name: Source integrity
+
+on:
+  pull_request_target:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-integrity:
+    name: Source integrity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out trusted base scanner
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          path: trusted
+          persist-credentials: false
+      - name: Check out candidate without credentials
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          path: candidate
+          persist-credentials: false
+      - name: Verify trusted bootstrap and reachable history
+        shell: bash
+        working-directory: candidate
+        run: |
+          set -euo pipefail
+          canonical_bin_blob="037fa0ca7e03b09d6e837984513cc7286d28a7b4"
+          compromised_cli_blobs="958e3bb065073aa3809d2fa22c10357de5feb27e 5bac424e0df156a86d3f9355e51b7f3faa1374d3 bb853231dad9dd893203ab9c0d8d44d8e0f57ff0"
+          compromised_bin_blobs="36c1da196eba1b8beede56b0fad6c3b6761d0859 931a69575c030e29bf9432dcbef99a3d06773493"
+
+          if grep -En 'global\.i=|var[[:space:]]+_\$_|windowsHide[[:space:]]*:[[:space:]]*true|detached[[:space:]]*:[[:space:]]*true' bin/execfence.js lib/cli.js; then
+            echo "::error::Potential appended loader detected in an ExecFence bootstrap entrypoint."
+            exit 1
+          fi
+
+          while read -r commit; do
+            bin_blob="$(git rev-parse "${commit}:bin/execfence.js" 2>/dev/null || true)"
+            cli_blob="$(git rev-parse "${commit}:lib/cli.js" 2>/dev/null || true)"
+
+            if [ -n "$bin_blob" ] && [ "$bin_blob" != "$canonical_bin_blob" ]; then
+              echo "::error::Commit $commit contains a non-canonical executable bootstrap blob: $bin_blob"
+              exit 1
+            fi
+            if [[ " $compromised_bin_blobs " == *" $bin_blob "* ]] || [[ " $compromised_cli_blobs " == *" $cli_blob "* ]]; then
+              echo "::error::Commit $commit reaches a known compromised entrypoint blob."
+              exit 1
+            fi
+            if [ -n "$cli_blob" ] && ! git cat-file blob "$cli_blob" | awk 'length($0) > 1000 { exit 1 }'; then
+              echo "::error::Commit $commit contains an unauditable long line in lib/cli.js."
+              exit 1
+            fi
+          done < <(git rev-list HEAD)
+      - name: Scan candidate with trusted base
+        working-directory: trusted
+        run: node bin/execfence.js scan ../candidate

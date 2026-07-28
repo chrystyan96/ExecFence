@@ -18,6 +18,8 @@ The module boundaries and non-negotiable controls are documented in [Architectur
 
 Version 6 consolidates ExecFence around explicit security guarantees, explainable decisions, signed trust, runtime capability proof, CI portability, and bounded analysis.
 
+The July 2026 repository-history incident and the controls added in response are documented in [security-incident-2026-07.md](security-incident-2026-07.md).
+
 The v6 trust and decision layer adds:
 
 - independent finding severity, confidence, decision, enforcement status, reason, and evidence

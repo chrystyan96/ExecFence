@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added source-integrity verification for the current CLI entrypoints and every corresponding blob reachable from `HEAD`, including explicit denial of all known compromised blob IDs.
+- Added a base-controlled, read-only `pull_request_target` workflow that validates source and history before executing repository JavaScript.
+- Documented the July 2026 Git-history incident, npm impact, local Codex audit, attribution limits, and server-side object-retention limitation.
+- Rebuilt the normal release lineage from verified clean snapshots and removed contaminated branches from normal Git reachability.
+
 ## v6.0.0 - 2026-07-28
 
 - Hardened scan scope, command parsing, workflow coverage, sandbox degradation/capability claims, helper containment, config paths, manifest approval, and dependency/cache identities against repository-controlled bypasses.

@@ -51,6 +51,8 @@ ExecFence v6 turns the existing execution and supply-chain checks into a more ex
 
 The project remains dependency-free at runtime and continues to cover npm/pnpm/Yarn/Bun, Python, Rust, Go, JVM, .NET, PHP, and Ruby execution surfaces.
 
+Security notice: the July 2026 repository-history incident, affected commit metadata, verified npm impact, remediation, and attribution limits are documented in [`docs/security-incident-2026-07.md`](docs/security-incident-2026-07.md).
+
 Install-like commands such as `npm install`, `pnpm add`, `pip install`, `uv add`, `cargo add`, `go get`, `go install pkg@version`, `composer require`, and `bundle add` run through ExecFence first. When an ecosystem has a reliable lifecycle suppression flag, ExecFence delegates with scripts disabled. Ecosystems such as Go do not have a universal equivalent, so ExecFence uses preflight scan, dependency review, runtime behavior audit, and strict-mode containment checks instead of pretending scripts were disabled.
 
 ## Common Commands

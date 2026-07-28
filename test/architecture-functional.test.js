@@ -98,6 +98,12 @@ test('coverage requires a real ExecFence command invocation', () => {
   assert.equal(steps[1].line, 7);
 });
 
+test('coverage recognizes the pre-execution source-integrity gate', () => {
+  assert.equal(isDirectGuarded('node scripts/verify-source-integrity.cjs'), true);
+  assert.equal(isDirectGuarded('npm run integrity:source'), true);
+  assert.equal(isDirectGuarded('echo "node scripts/verify-source-integrity.cjs"'), false);
+});
+
 test('coverage discovers nested package scripts and parses VS Code task commands', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-coverage-monorepo-'));
   fs.mkdirSync(path.join(root, 'services', 'api'), { recursive: true });

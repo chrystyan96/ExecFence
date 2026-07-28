@@ -33,6 +33,7 @@ jobs:
             echo "::error::Potential appended loader detected in an ExecFence bootstrap entrypoint."
             exit 1
           fi
+      - run: node scripts/verify-source-integrity.cjs
       - run: node bin/execfence.js scan .
       - id: tag-source
         run: |

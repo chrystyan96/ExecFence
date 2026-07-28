@@ -35,6 +35,7 @@ The model does not assume protection after an attacker already controls the user
 6. Registry requests are limited to explicit HTTPS endpoints and bounded responses. Registry metadata is evidence, not proof of package safety.
 7. Cache entries are reusable analysis results only for identical content hash, policy fingerprint, and ExecFence version. A cache hit is not an approval.
 8. CI and release workflows perform a shell-level bootstrap integrity check on the executable shim and CLI module before loading project JavaScript, then scan source before `npm ci --ignore-scripts`.
+9. A base-controlled source-integrity workflow rejects non-canonical bootstrap blobs, known compromised CLI blobs, shallow-history validation, and unauditable executable-source lines before PR code is executed.
 
 ## Finding contract
 
