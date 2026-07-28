@@ -1,6 +1,6 @@
 {
   "name": "execfence",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "Guard package-manager installs, dependency changes, CI, and agent-run commands before suspicious project code executes.",
   "license": "Apache-2.0",
   "author": "Chrystyan Byrnes",

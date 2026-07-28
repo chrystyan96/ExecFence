@@ -35,10 +35,11 @@ test('update-changelog dry run prints release section without writing', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-changelog-dry-'));
   copyFixture(root);
   const before = fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8');
+  const version = require(path.join(root, 'package.json')).version;
 
   const output = execFileSync(process.execPath, [script, '--dry-run'], { cwd: root, encoding: 'utf8' });
 
-  assert.match(output, /## v5\.0\.0 - \d{4}-\d{2}-\d{2}/);
+  assert.match(output, new RegExp(`## v${version.replaceAll('.', '\\.')} - \\d{4}-\\d{2}-\\d{2}`));
   assert.match(output, /- initial/);
   assert.equal(fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8'), before);
 });
