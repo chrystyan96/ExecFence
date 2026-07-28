@@ -49,8 +49,8 @@ jobs:
           fi
 
           while read -r commit; do
-            bin_blob="$(git rev-parse "${commit}:bin/execfence.js" 2>/dev/null || true)"
-            cli_blob="$(git rev-parse "${commit}:lib/cli.js" 2>/dev/null || true)"
+            bin_blob="$(git rev-parse --verify "${commit}:bin/execfence.js" 2>/dev/null || true)"
+            cli_blob="$(git rev-parse --verify "${commit}:lib/cli.js" 2>/dev/null || true)"
 
             if [ -n "$bin_blob" ] && [ "$bin_blob" != "$canonical_bin_blob" ]; then
               echo "::error::Commit $commit contains a non-canonical executable bootstrap blob: $bin_blob"

@@ -32,14 +32,17 @@ test('source integrity accepts the reviewed worktree entrypoints', () => {
 
 test('source integrity rejects a loader that was removed only from the current tree', () => {
   const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-source-integrity-'));
+  git(fixture, ['init']);
+  git(fixture, ['config', 'user.name', 'Integrity Test']);
+  git(fixture, ['config', 'user.email', 'integrity@example.test']);
+  fs.writeFileSync(path.join(fixture, 'README.md'), 'history before entrypoints\n');
+  commitAll(fixture, 'root without entrypoints');
+
   fs.mkdirSync(path.join(fixture, 'bin'), { recursive: true });
   fs.mkdirSync(path.join(fixture, 'lib'), { recursive: true });
   const canonicalBin = fs.readFileSync(path.join(projectRoot, 'bin', 'execfence.js'), 'utf8');
   fs.writeFileSync(path.join(fixture, 'bin', 'execfence.js'), canonicalBin);
   fs.writeFileSync(path.join(fixture, 'lib', 'cli.js'), "'use strict';\nmodule.exports = {\n  main() {},\n};\n");
-  git(fixture, ['init']);
-  git(fixture, ['config', 'user.name', 'Integrity Test']);
-  git(fixture, ['config', 'user.email', 'integrity@example.test']);
   commitAll(fixture, 'clean');
 
   fs.appendFileSync(path.join(fixture, 'bin', 'execfence.js'), `\n${'x'.repeat(2_100)}\n`);

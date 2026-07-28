@@ -105,7 +105,7 @@ function inspectHistory(cwd) {
   const inspectedBlobs = new Set();
   for (const commit of commits) {
     for (const file of entrypoints) {
-      const blob = git(cwd, ['rev-parse', `${commit}:${file}`], { allowFailure: true })?.trim();
+      const blob = git(cwd, ['rev-parse', '--verify', `${commit}:${file}`], { allowFailure: true })?.trim();
       if (!blob || inspectedBlobs.has(`${file}:${blob}`)) continue;
       inspectedBlobs.add(`${file}:${blob}`);
       const content = git(cwd, ['cat-file', 'blob', blob]);
