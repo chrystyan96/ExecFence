@@ -23,7 +23,15 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: npm
-      - run: npm ci
+      - name: Verify CLI bootstrap integrity
+        shell: bash
+        run: |
+          if grep -En 'global\.i=|var[[:space:]]+_\$_|windowsHide[[:space:]]*:[[:space:]]*true|detached[[:space:]]*:[[:space:]]*true' bin/execfence.js lib/cli.js; then
+            echo "::error::Potential appended loader detected in an ExecFence bootstrap entrypoint."
+            exit 1
+          fi
+      - run: node bin/execfence.js scan .
+      - run: npm ci --ignore-scripts
       - run: npm test
       - run: node bin/execfence.js run -- npm test
       - run: node bin/execfence.js ci
@@ -46,4 +54,12 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Verify CLI bootstrap integrity
+        shell: bash
+        run: |
+          if grep -En 'global\.i=|var[[:space:]]+_\$_|windowsHide[[:space:]]*:[[:space:]]*true|detached[[:space:]]*:[[:space:]]*true' bin/execfence.js lib/cli.js; then
+            echo "::error::Potential appended loader detected in an ExecFence bootstrap entrypoint."
+            exit 1
+          fi
+      - run: node bin/execfence.js scan .
       - run: npm run helper:smoke

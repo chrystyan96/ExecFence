@@ -1,0 +1,29 @@
+name: ExecFence
+description: Run ExecFence CI checks and produce a SARIF artifact.
+inputs:
+  base-ref:
+    description: Git ref used as the reviewed baseline.
+    required: false
+    default: ""
+  sarif:
+    description: SARIF output path relative to the repository.
+    required: false
+    default: .execfence/reports/execfence.sarif
+  strict:
+    description: Enable strict config validation.
+    required: false
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - name: Run ExecFence
+      shell: bash
+      env:
+        EXECFENCE_ACTION_BASE_REF: ${{ inputs.base-ref }}
+        EXECFENCE_ACTION_SARIF: ${{ inputs.sarif }}
+        EXECFENCE_ACTION_STRICT: ${{ inputs.strict }}
+      run: |
+        args=(ci --sarif "$EXECFENCE_ACTION_SARIF" --github-annotations)
+        if [[ -n "$EXECFENCE_ACTION_BASE_REF" ]]; then args+=(--base-ref "$EXECFENCE_ACTION_BASE_REF"); fi
+        if [[ "$EXECFENCE_ACTION_STRICT" == "true" ]]; then args+=(--strict); fi
+        node "$GITHUB_ACTION_PATH/../../../bin/execfence.js" "${args[@]}"

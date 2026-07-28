@@ -50,8 +50,10 @@ npx --yes execfence adopt --write-baseline
 npx --yes execfence wire --dry-run
 npx --yes execfence deps diff
 npx --yes execfence deps review
+npx --yes execfence deps compare <package@old> <package@new>
 npx --yes execfence policy explain
 npx --yes execfence policy test
+npx --yes execfence policy learn --report .execfence/reports/<report>.json
 npx --yes execfence manifest
 npx --yes execfence manifest diff
 npx --yes execfence scan --ci --format json
@@ -64,6 +66,7 @@ npx --yes execfence scan-history --max-commits 1000
 npx --yes execfence doctor
 npx --yes execfence pack-audit
 npx --yes execfence trust audit
+npx --yes execfence approval audit
 npx --yes execfence baseline add --from-report .execfence/reports/<report>.json --owner <owner> --reason <reason> --expires-at <date>
 npx --yes execfence agent-report
 npx --yes execfence reports list
@@ -73,7 +76,7 @@ npx --yes execfence report --markdown .execfence/reports/<report>.json
 npx --yes execfence enrich --preview .execfence/reports/<report>.json
 npx --yes execfence incident bundle --from-report .execfence/reports/<report>.json
 npx --yes execfence pr-comment --report .execfence/reports/<report>.json
-npx --yes execfence explain suspicious-package-script
+npx --yes execfence explain suspicious-package-script --report .execfence/reports/<report>.json
 npx --yes execfence install-hooks
 npx --yes execfence install-agent-rules --scope project
 npx --yes execfence install-agent-rules --verify --scope project
@@ -109,13 +112,14 @@ Prefer project config under `.execfence/config/` for policy packs, reviewed exce
 ## User Configuration Surface
 
 Create project configuration through `execfence init`:
-- `.execfence/config/execfence.json`: main config for `policyPack`, `mode`, `blockSeverities`, `warnSeverities`, scan `roots`, `ignoreDirs`, `skipFiles`, `allowExecutables`, `extraSignatures`, `extraRegexSignatures`, `signaturesFile`, `baselineFile`, `reportsDir`, `reportsGitignore`, `runtimeTrace`, `analysis.webEnrichment`, `manifest.blockNewEntrypoints`, `ci`, `wire`, `deps`, `supplyChain.mode`, `supplyChain.metadata`, `supplyChain.reputation`, `adopt`, `policy`, `trustStore`, `reportRetention`, `reports.retention`, `htmlReport`, `redaction`, `workflowHardening`, `archiveAudit`, and `auditAllPackageScripts`.
+- `.execfence/config/execfence.json`: main config for `policyPack`, `mode`, `blockSeverities`, `warnSeverities`, scan scope compatibility hints, `allowExecutables`, signatures, baseline, reports, `runtimeTrace`, enrichment, manifest, CI, wiring, dependency/supply-chain review, adoption, policy, trust stores, `reports.retention`, HTML output, redaction, workflow hardening, archive audit, and package-script audit.
 - `.execfence/config/signatures.json`: optional team-owned literal and regex indicators. Use this for new IoCs instead of editing scanner code.
-- `.execfence/config/baseline.json`: optional reviewed exceptions for existing findings. Require `findingId`, `file`, `reason`, `owner`, `expiresAt`, and preferably `sha256`.
-- `.execfence/config/sandbox.json`: sandbox policy for `execfence run --sandbox`, including `mode`, `profile`, filesystem, process, network, and helper settings. Audit mode is evidence without a helper; enforce mode must block if network/filesystem/sensitive-read/child-process/new-executable enforcement is unavailable unless the user explicitly uses `--allow-degraded`.
+- `.execfence/config/baseline.json`: optional legacy reviewed exceptions. Prefer granular signed approvals; when `approvals.requireSignedFindings` is true, unsigned baseline entries cannot suppress findings.
+- `.execfence/approvals.json`: narrow, expiring approvals scoped to findings, manifests, packages, commands, or policy changes. Sign them only with keys separately trusted under `.execfence/trust/approvers.json`.
+- `.execfence/config/sandbox.json`: sandbox policy for `execfence run --sandbox`, including `mode`, `profile`, filesystem, process, network, and helper settings. Audit mode is evidence without a helper; enforce mode blocks if required capabilities are unavailable. Degraded mode requires `--allow-degraded --degraded-reason <reason>` locally and is forbidden in CI.
 - `.execfence/config/policies/*.json`: optional project/team policy packs selected by `policyPack`.
 - `.execfence/reports/`: automatic JSON reports. Keep it gitignored unless the user sets `reportsGitignore: false`.
-- `.execfence/manifest.json`: generated execution-surface manifest for package scripts, Makefiles, workflows, tasks, hooks, language build files, and agent rules.
+- `.execfence/manifest.json`: reviewed execution-surface baseline for package scripts, Makefiles, workflows, tasks, hooks, language build files, and agent rules; update it only with `execfence manifest approve` and commit it for base-ref CI comparison.
 - `.execfence/cache/enrichment/`: local cache for public-source enrichment of critical/high findings.
 - `.execfence/trust/*.json`: trust stores for reviewed files, actions, registries, package scopes, and package sources.
 - `.execfence/helper/execfence-helper.json`: optional helper metadata. Validate with `execfence helper audit`; do not trust helpers without hash/provenance metadata.

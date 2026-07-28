@@ -36,7 +36,7 @@ Every PR or update must explicitly review documentation impact. Public changes t
 
 Before release, run `execfence config validate --strict` and review the latest report `blockingSummary`. Do not ship a command that says OK while another report shows an unexplained uncovered surface.
 
-For v5 sandbox releases, also build and smoke-test the Go helper for Windows and Linux with `npm run helper:smoke`. Enforce mode is releasable only when every claimed helper capability is backed by self-test evidence; unsupported capabilities must appear in `sandbox doctor`, reports, and strict-mode blocks rather than being documented as protection.
+For sandbox releases, also build and smoke-test the Go helper for Windows and Linux with `npm run helper:smoke`. Enforce mode is releasable only when every claimed helper capability is backed by self-test evidence; unsupported capabilities must appear in `sandbox doctor`, reports, and strict-mode blocks rather than being documented as protection.
 
 `README.md` is the primary GitHub and npm entrypoint. Review it for every update, and update it whenever a change adds or changes a user-visible feature, command, workflow, positioning, or usage path. If `README.md` does not change, the PR or release checklist must state why: either the change has no public behavior impact, or the existing README already covers it.
 

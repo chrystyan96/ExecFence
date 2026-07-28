@@ -155,8 +155,9 @@ test('guard global enable installs skill, agent rules, and npm shims', () => {
   const status = guardGlobalStatus({ home, codexHome });
 
   assert.equal(enabled.shellInterception.enabled, true);
-  assert.equal(status.ok, true);
+  assert.equal(status.ok, false);
   assert.equal(status.npmGuard.enabled, true);
+  assert.equal(status.npmGuard.activeInPath, false);
   assert.equal(fs.existsSync(path.join(home, '.agents', 'skills', 'execfence', 'defaults.json')), true);
   assert.equal(fs.existsSync(path.join(codexHome, 'skills', 'execfence', 'SKILL.md')), true);
   assert.equal(fs.existsSync(path.join(home, '.execfence', 'shims', 'npm')), true);

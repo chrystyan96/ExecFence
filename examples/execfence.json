@@ -4,9 +4,6 @@
   "mode": "block",
   "blockSeverities": ["critical", "high"],
   "warnSeverities": ["medium", "low"],
-  "roots": ["backend-go", "backend", "frontend", "desktop", "packages", "scripts", ".github", ".vscode"],
-  "ignoreDirs": ["custom-generated-output"],
-  "skipFiles": [],
   "allowExecutables": [
     {
       "path": "tools/reviewed-helper.exe",
@@ -30,6 +27,12 @@
     "recordArtifacts": false,
     "denyOnNewExecutable": false
   },
+  "performance": {
+    "scanCache": true,
+    "scanCacheMaxEntries": 10000,
+    "dependencyConcurrency": 4,
+    "maxWorkerMemoryMb": 256
+  },
   "analysis": {
     "webEnrichment": {
       "enabled": true,
@@ -49,7 +52,7 @@
   "ci": {
     "enabled": true,
     "baseRef": "HEAD",
-    "checks": ["scan", "manifest-diff", "deps-diff", "pack-audit", "trust-audit"]
+    "checks": ["scan", "manifest-diff", "deps-diff", "coverage", "config-validate", "pack-audit", "trust-audit", "policy-diff", "approval-audit"]
   },
   "wire": {
     "packageScripts": true,
@@ -70,8 +73,15 @@
   },
   "policy": {
     "customPoliciesDir": ".execfence/config/policies",
-    "requiredOwners": {},
-    "requireSignedPolicyFiles": false
+    "requiredOwners": {}
+  },
+  "approvals": {
+    "path": ".execfence/approvals.json",
+    "approversPath": ".execfence/trust/approvers.json",
+    "requireSignedFindings": true,
+    "requireSignedManifest": false,
+    "requireSignedPolicyChanges": false,
+    "minimumSignatures": 1
   },
   "trustStore": {
     "files": ".execfence/trust/files.json",
@@ -84,10 +94,6 @@
     "enabled": true,
     "includeRuntimeTrace": true,
     "includeManifest": true
-  },
-  "reportRetention": {
-    "maxReports": 100,
-    "maxAgeDays": 90
   },
   "reports": {
     "retention": {

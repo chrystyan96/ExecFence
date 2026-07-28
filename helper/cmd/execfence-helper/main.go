@@ -17,7 +17,7 @@ import (
 
 const (
 	protocolVersion = 1
-	helperVersion   = "5.0.0"
+	helperVersion   = "6.0.0"
 )
 
 type capability struct {
@@ -131,7 +131,7 @@ func selfTest() selfTestResult {
 		"newExecutables": {
 			Available: true,
 			Enforced:  true,
-			Proof:     "helper snapshots workspace executable artifacts before and after execution and fails on new artifacts",
+			Proof:     "helper polls workspace executable artifacts during execution and terminates the supervised process tree on change",
 		},
 	}
 	limitations := []string{}
@@ -229,13 +229,50 @@ func runCommand(args []string) error {
 		os.Exit(126)
 	}
 	events(event{Type: "spawn", Surface: "process", Operation: display, PID: cmd.Process.Pid})
-	err = cmd.Wait()
-	after := snapshotExecutables(p.CWD)
-	newExecs := diffExecutableSnapshots(before, after)
-	if p.FS.DenyNewExecutable && len(newExecs) > 0 {
-		for _, file := range newExecs {
-			events(event{Type: "deny", Surface: "filesystem", Operation: "new executable artifact", File: file, Reason: "sandbox policy denies new executable/archive artifacts"})
+	waitResult := make(chan error, 1)
+	go func() { waitResult <- cmd.Wait() }()
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	terminatedForViolation := false
+	for {
+		select {
+		case err = <-waitResult:
+			if p.FS.DenyNewExecutable {
+				newExecs := diffExecutableSnapshots(before, snapshotExecutables(p.CWD))
+				if len(newExecs) > 0 {
+					for _, file := range newExecs {
+						events(event{Type: "deny", Surface: "filesystem", Operation: "new executable artifact", File: file, Reason: "sandbox policy denied executable/archive creation during runtime"})
+					}
+					events(event{Type: "terminate", Surface: "process", Operation: display, PID: cmd.Process.Pid, Reason: "supervised process tree closed after a runtime policy violation detected at process completion"})
+					supervisor.Close()
+					terminatedForViolation = true
+				}
+			}
+			goto commandFinished
+		case <-ticker.C:
+			if !p.FS.DenyNewExecutable {
+				continue
+			}
+			current := snapshotExecutables(p.CWD)
+			newExecs := diffExecutableSnapshots(before, current)
+			if len(newExecs) == 0 {
+				continue
+			}
+			for _, file := range newExecs {
+				events(event{Type: "deny", Surface: "filesystem", Operation: "new executable artifact", File: file, Reason: "sandbox policy denied executable/archive creation during runtime"})
+			}
+			events(event{Type: "terminate", Surface: "process", Operation: display, PID: cmd.Process.Pid, Reason: "process tree terminated after a runtime policy violation"})
+			supervisor.Close()
+			_ = cmd.Process.Kill()
+			err = <-waitResult
+			terminatedForViolation = true
+			goto commandFinished
 		}
+	}
+
+commandFinished:
+	supervisor.Close()
+	if terminatedForViolation {
 		os.Exit(126)
 	}
 	exitCode := 0
@@ -318,7 +355,7 @@ func diffExecutableSnapshots(before, after map[string]fileInfo) []string {
 
 func ignoredDir(name string) bool {
 	switch name {
-	case ".git", ".execfence", "node_modules", "dist", "build", "coverage", "target", ".next", ".nuxt", ".turbo", ".pytest_cache":
+	case ".git", ".execfence", "node_modules", ".turbo", ".pytest_cache":
 		return true
 	default:
 		return false

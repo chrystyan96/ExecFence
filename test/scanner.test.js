@@ -56,12 +56,14 @@ test('scan honors config allowExecutables and extraSignatures', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-config-'));
   fs.mkdirSync(path.join(root, 'tools'), { recursive: true });
   fs.mkdirSync(path.join(root, '.execfence', 'config'), { recursive: true });
+  const executable = 'binary';
+  const sha256 = crypto.createHash('sha256').update(executable).digest('hex');
   fs.writeFileSync(path.join(root, '.execfence', 'config', 'execfence.json'), JSON.stringify({
     roots: ['tools'],
-    allowExecutables: ['tools/known-safe.exe'],
+    allowExecutables: [{ path: 'tools/known-safe.exe', sha256, reason: 'reviewed fixture' }],
     extraSignatures: ['custom-bad-domain.example'],
   }, null, 2));
-  fs.writeFileSync(path.join(root, 'tools', 'known-safe.exe'), 'binary');
+  fs.writeFileSync(path.join(root, 'tools', 'known-safe.exe'), executable);
   fs.writeFileSync(path.join(root, 'tools', 'config.js'), 'const url = "custom-bad-domain.example";\n');
 
   const result = scan({ cwd: root });
