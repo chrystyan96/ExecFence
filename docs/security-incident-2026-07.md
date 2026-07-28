@@ -34,6 +34,7 @@ The local audit cannot prove that the historical payload never ran. Credentials 
 - Validate the current entrypoints and every entrypoint blob reachable from `HEAD`.
 - Run source-integrity validation before executing repository JavaScript in CI and release workflows.
 - Use a base-controlled `pull_request_target` workflow with read-only permissions and no persisted GitHub credentials.
+- Recovery-lock the trusted integrity workflow, its verifier, and the executable bootstrap against ordinary PR modification.
 - Block non-fast-forward updates to `master` and require the source-integrity status.
 
 GitHub may retain unreachable objects and pull-request refs after branch history is rewritten. Permanent server-side purging of an object by SHA requires GitHub Support; history rewriting removes it from normal clones and refs but cannot promise immediate physical deletion from GitHub storage.
