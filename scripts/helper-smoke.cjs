@@ -70,7 +70,14 @@ assert.strictEqual(selfTest.platform, nodePlatform());
 assert.strictEqual(selfTest.arch, nodeArch());
 assert.strictEqual(selfTest.sha256, sha256);
 
-for (const capability of ['process', 'childProcesses', 'newExecutables']) {
+const enforcedCapabilities = ['process', 'newExecutables'];
+if (process.platform === 'win32') {
+  enforcedCapabilities.push('childProcesses');
+} else {
+  assert.strictEqual(selfTest.capabilities.childProcesses?.enforced, false, 'childProcesses must not be over-claimed');
+  assert.ok(selfTest.capabilities.childProcesses?.limitation, 'childProcesses must explain its platform limitation');
+}
+for (const capability of enforcedCapabilities) {
   assert.strictEqual(selfTest.capabilities[capability]?.enforced, true, `${capability} must be enforced`);
 }
 for (const capability of ['filesystem', 'sensitiveReads', 'network']) {
@@ -86,7 +93,7 @@ fs.writeFileSync(passPolicy, JSON.stringify({
   mode: 'enforce',
   profile: 'strict',
   cwd: workDir,
-  requiredCapabilities: ['process', 'childProcesses', 'newExecutables'],
+  requiredCapabilities: enforcedCapabilities,
   command: { argv: [process.execPath, '-e', "console.log('helper-smoke-ok')"], display: 'node helper smoke pass' },
   fs: { deny: [], denyNewExecutable: true },
   process: { deny: [] },
@@ -107,7 +114,7 @@ fs.writeFileSync(denyPolicy, JSON.stringify({
   mode: 'enforce',
   profile: 'strict',
   cwd: workDir,
-  requiredCapabilities: ['process', 'childProcesses', 'newExecutables'],
+  requiredCapabilities: enforcedCapabilities,
   command: { argv: [process.execPath, '-e', ''], display: 'node helper smoke deny' },
   fs: { deny: [], denyNewExecutable: true },
   process: { deny: [] },

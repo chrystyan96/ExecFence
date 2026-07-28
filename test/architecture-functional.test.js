@@ -119,7 +119,11 @@ test('coverage discovers nested package scripts and parses VS Code task commands
 
 test('allowDegraded makes the effective sandbox mode explicit audit', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'execfence-degraded-'));
-  const plan = sandboxPlan(root, ['node', '-e', '0'], { mode: 'enforce', allowDegraded: true });
+  const plan = sandboxPlan(root, ['node', '-e', '0'], {
+    mode: 'enforce',
+    allowDegraded: true,
+    ci: false,
+  });
 
   assert.equal(plan.requestedMode, 'enforce');
   assert.equal(plan.mode, 'audit');
