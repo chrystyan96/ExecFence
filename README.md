@@ -31,25 +31,25 @@ Enable global package-manager interception for terminal and agent-run commands:
 npx --yes execfence guard global-enable
 ```
 
-## What Version 5 Adds
+## What Version 6 Adds
 
-ExecFence v5 expands supply-chain coverage beyond npm and adds a real sandbox-helper contract in the same major release:
+ExecFence v6 turns the existing execution and supply-chain checks into a more explicit trust and enforcement system:
 
-- Windows and Linux helper support through a Go supervisor binary
-- `execfence-helper self-test` capability proof before enforce mode is allowed
-- `execfence-helper run --policy <policy.json> -- <command>` as the only enforce-mode execution path
-- helper manifests pinned by platform, arch, SHA-256, provenance, version, and self-test evidence
-- truthful strict-mode blocking when filesystem, network, process-tree, sensitive-read, or new-executable containment is unavailable
-- global shims for npm/pnpm/yarn/Bun, Python, Cargo, Go, Maven/Gradle, dotnet/NuGet, Composer, and Bundler package managers
-- lifecycle-script suppression for npm-like install commands where package managers expose a reliable suppression flag
-- dependency metadata and reputation review for changed packages
-- OSV advisory checks without package-manager tokens or user credentials
-- tarball integrity/content audit and tarball delta against the previous version
-- `supplyChain.mode: "strict"` for CI/release workflows
-- runtime dependency behavior audit with helper-backed enforcement when a verified helper proves the required capabilities
-- unified coverage evidence across `coverage`, `manifest`, `ci`, and reports: `directGuarded` means the command itself invokes ExecFence; `covered` also counts workflow-level gates, package prehooks, and active global shims
-- actionable report summaries that explain why ExecFence blocked, how the code can execute, the affected ecosystem, and the next remediation step
-- `execfence config validate` for `.execfence/config/*` schemas, regex signatures, baselines, sandbox policy, and strict-mode coverage checks
+- one decision model with independent severity, confidence, decision, enforcement status, policy reason, and exact evidence
+- a documented threat model and capability matrix that separate prevention, partial enforcement, detection, and unsupported controls
+- fail-closed sandbox enforcement, CI rejection of degraded execution, and mandatory local justification for an explicit downgrade
+- helper runtime monitoring that terminates its supervised process tree when a denied executable or archive appears
+- granular, expiring approvals with branch, commit, command, environment, package, manifest-entry, and policy scope
+- separately trusted Ed25519, Ed448, RSA, or ECDSA approver keys with cryptographic signatures and distinct-reviewer quorum
+- exact-finding explanations, SARIF output, GitHub annotations, Markdown summaries, and GitHub/GitLab/Azure integration examples
+- CycloneDX 1.6 and SPDX 2.3 SBOM generation
+- dependency-version comparison for lifecycle scripts, bin entries, provenance, integrity, and package archive changes
+- recursive package-content auditing, archive expansion limits, executable magic-byte detection, and stricter registry/artifact validation
+- a versioned public Node API and contracts shared by the CLI, CI adapters, approvals, and future IDE integrations
+- content-addressed scan caching, bounded workers, timeout/cancellation controls, memory limits, and performance metrics
+- release bootstrap checks that reject appended-loader patterns before the project CLI is loaded, followed by source scanning and `npm ci --ignore-scripts`
+
+The project remains dependency-free at runtime and continues to cover npm/pnpm/Yarn/Bun, Python, Rust, Go, JVM, .NET, PHP, and Ruby execution surfaces.
 
 Install-like commands such as `npm install`, `pnpm add`, `pip install`, `uv add`, `cargo add`, `go get`, `go install pkg@version`, `composer require`, and `bundle add` run through ExecFence first. When an ecosystem has a reliable lifecycle suppression flag, ExecFence delegates with scripts disabled. Ecosystems such as Go do not have a universal equivalent, so ExecFence uses preflight scan, dependency review, runtime behavior audit, and strict-mode containment checks instead of pretending scripts were disabled.
 
@@ -62,12 +62,18 @@ Install-like commands such as `npm install`, `pnpm add`, `pip install`, `uv add`
 | `npx --yes execfence run -- npm test` | Runs a command behind ExecFence. It scans first, executes only if clean, records runtime evidence, snapshots file changes, rescans changed files, and writes a report. |
 | `npx --yes execfence ci` | Runs the release/CI bundle: scan, manifest diff, dependency diff/review, coverage, config validation, package audit, and trust audit. |
 | `npx --yes execfence deps review` | Reviews changed dependencies across npm/Bun/Yarn/pnpm, Python, Cargo, Go, JVM, NuGet, Composer, and Bundler manifests/lockfiles with metadata, reputation, integrity, source, and runtime-surface findings. |
+| `npx --yes execfence deps compare foo@1.0.0 foo@1.1.0` | Compares lifecycle scripts, bin entries, provenance, integrity, and archive delta between two package versions. |
+| `npx --yes execfence sbom --format cyclonedx` | Generates a monorepo-aware CycloneDX 1.6 SBOM. Use `--format spdx` for SPDX 2.3 and `--output <file>` to write it. |
+| `npx --yes execfence policy diff --base-ref HEAD` | Compares effective policy with a Git base and blocks security-sensitive policy drift. |
+| `npx --yes execfence approval audit` | Verifies approval expiry, scope, trusted signing keys, cryptographic signatures, and distinct-reviewer quorum. |
+| `npx --yes execfence explain <finding-id> --report <file>` | Explains exact evidence, severity, confidence, decision, policy reason, and remediation. |
 | `npx --yes execfence coverage` | Shows whether sensitive entrypoints are covered by direct `execfence run`, package prehooks, workflow-level gates, or active global shims. |
 | `npx --yes execfence config validate` | Validates `.execfence/config/*`, baselines, signatures, sandbox policy, and policy packs. It reports invalid regexes, expired baselines, unsafe allowlists, and strict-mode coverage gaps. |
 | `npx --yes execfence pack-audit` | Audits files that would be shipped in the package handoff/release, catching dangerous scripts, unexpected binaries, archives, and suspicious publish inputs. |
 | `npx --yes execfence agent-report` | Reviews agent, MCP, tool, and instruction-file surfaces for shell/filesystem/network/browser/credential access and attempts to disable security checks. |
 | `npx --yes execfence run --sandbox-mode audit -- npm test` | Runs the command normally but records sandbox policy, capability gaps, runtime trace, file snapshot, post-run scan, and report evidence. Audit mode is evidence, not containment. |
 | `npx --yes execfence run --sandbox -- npm test` | Enforce mode. It only runs if a verified Windows/Linux helper proves every required capability; otherwise it blocks before the command starts. |
+| `npx --yes execfence run --timeout-ms 120000 -- npm test` | Applies a bounded runtime timeout while preserving preflight, postflight, and trace evidence. |
 | `npx --yes execfence sandbox doctor` | Prints local sandbox capability status: helper install state, `helperVerified`, capability proof, unsupported capabilities, and missing requirements for enforce mode. |
 | `npx --yes execfence sandbox plan -- npm test` | Explains the sandbox policy that would apply to a command: filesystem, process, network, helper proof, missing enforcement, and block reasons. |
 | `npx --yes execfence sandbox install-helper --binary ./path/to/execfence-helper` | Registers a reviewed helper binary, computes SHA-256, stores helper metadata, runs helper audit, and reports which capabilities are actually proven. |
@@ -94,7 +100,7 @@ npx --yes execfence run --sandbox -- npm test
 
 Enforce mode validates the helper binary SHA-256, platform, arch, provenance, and `execfence-helper self-test` output. If every required capability is proven, ExecFence writes a policy JSON and launches `execfence-helper run --policy <policy.json> -- <command>`. The helper emits JSONL events such as `spawn`, `deny`, and `exit`; deny events become blocking findings.
 
-ExecFence does not count metadata-only helpers as enforcement. Unsupported capabilities are reported as `unsupportedCapabilities` and strict/enforce blocks instead of silently downgrading. The current helper proves process supervision, Windows Job Object or Linux process-group child handling, and new executable artifact detection. Filesystem pre-read denial, sensitive-read denial, and network blocking require a real platform broker/elevated capability before they can be claimed.
+ExecFence does not count metadata-only helpers as enforcement. Unsupported capabilities are reported as `unsupportedCapabilities` and strict/enforce blocks instead of silently downgrading. The current helper proves root-process supervision and new-executable artifact detection. Windows can additionally prove Job Object child containment; Linux process-group cleanup is best-effort and is not claimed as complete child-process containment. Filesystem pre-read denial, sensitive-read denial, and network blocking require a real platform broker/elevated capability before they can be claimed.
 
 ## Strict Supply-Chain Mode
 
@@ -129,6 +135,9 @@ The npm README is intentionally short. Full documentation lives here:
 
 - [Full documentation](https://chrystyan96.github.io/ExecFence/)
 - [Source docs](docs/README.md)
+- [Architecture and security invariants](docs/architecture.md)
+- [Threat model and guarantee contract](docs/threat-model.md)
+- [Additional functionality implementation plan](docs/additional-features-plan.md)
 - [Detection model](docs/detection.md)
 - [Release cadence](docs/release-cadence.md)
 - [OpenAI Skills catalog PR](https://github.com/openai/skills/pull/385)

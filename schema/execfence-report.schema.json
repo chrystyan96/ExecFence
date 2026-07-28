@@ -101,6 +101,10 @@
         "properties": {
           "id": { "type": "string" },
           "severity": { "enum": ["critical", "high", "medium", "low"] },
+          "confidence": { "enum": ["high", "medium", "low"] },
+          "decision": { "enum": ["block", "review", "allow", null] },
+          "enforcement": { "enum": ["block", "review", "allow", "reported", null] },
+          "decisionReason": { "type": ["string", "null"] },
           "file": { "type": "string" },
           "line": { "type": "integer" },
           "column": { "type": ["integer", "null"] },

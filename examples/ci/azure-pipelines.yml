@@ -1,0 +1,11 @@
+steps:
+  - checkout: self
+    fetchDepth: 0
+  - task: NodeTool@0
+    inputs:
+      versionSpec: "22.x"
+  - script: npx --yes execfence@6.0.0 ci --base-ref "$(System.PullRequest.TargetBranch)" --sarif .execfence/reports/execfence.sarif --strict
+    displayName: ExecFence CI
+  - publish: .execfence/reports/execfence.sarif
+    artifact: execfence-sarif
+    condition: always()

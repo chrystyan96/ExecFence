@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/chrystyan96/execfence/master/schema/execfence-approvals.schema.json",
+  "title": "ExecFence granular approvals",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "approvals"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "approvals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "subject", "scope", "reason", "owner", "createdAt", "expiresAt", "requiredSignatures", "signatures"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^appr_[A-Fa-f0-9]{24}$" },
+          "type": { "enum": ["finding", "manifest", "manifest-entry", "package", "command", "policy"] },
+          "subject": { "type": "object", "minProperties": 1, "additionalProperties": { "type": ["string", "number", "boolean"] } },
+          "scope": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "branch": { "type": ["string", "null"] },
+              "command": { "type": ["string", "null"] },
+              "commit": { "type": ["string", "null"] },
+              "environment": { "enum": ["local", "ci", null] }
+            }
+          },
+          "reason": { "type": "string", "minLength": 1 },
+          "owner": { "type": "string", "minLength": 1 },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "requiredSignatures": { "type": "integer", "minimum": 1, "maximum": 20 },
+          "signatures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["keyId", "fingerprint", "signedAt", "signature"],
+              "properties": {
+                "keyId": { "type": "string", "minLength": 1 },
+                "fingerprint": { "type": "string", "pattern": "^sha256:[A-Fa-f0-9]{64}$" },
+                "algorithm": { "enum": ["intrinsic", "sha256"] },
+                "signedAt": { "type": "string", "format": "date-time" },
+                "signature": { "type": "string", "minLength": 16 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

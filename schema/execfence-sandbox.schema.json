@@ -3,7 +3,7 @@
   "$id": "https://raw.githubusercontent.com/chrystyan96/execfence/master/schema/execfence-sandbox.schema.json",
   "title": "execfence sandbox policy",
   "type": "object",
-  "additionalProperties": true,
+  "additionalProperties": false,
   "required": ["mode", "profile", "fs", "process", "network"],
   "properties": {
     "$schema": { "type": "string" },
@@ -12,7 +12,7 @@
     "allowDegraded": { "type": "boolean" },
     "fs": {
       "type": "object",
-      "additionalProperties": true,
+      "additionalProperties": false,
       "properties": {
         "readAllow": { "type": "array", "items": { "type": "string" } },
         "writeAllow": { "type": "array", "items": { "type": "string" } },
@@ -22,7 +22,7 @@
     },
     "process": {
       "type": "object",
-      "additionalProperties": true,
+      "additionalProperties": false,
       "properties": {
         "allow": { "type": "array", "items": { "type": "string" } },
         "deny": { "type": "array", "items": { "type": "string" } },
@@ -31,7 +31,7 @@
     },
     "network": {
       "type": "object",
-      "additionalProperties": true,
+      "additionalProperties": false,
       "properties": {
         "default": { "enum": ["allow", "audit", "deny"] },
         "allow": { "type": "array", "items": { "type": "string" } },
@@ -40,7 +40,7 @@
     },
     "helper": {
       "type": "object",
-      "additionalProperties": true,
+      "additionalProperties": false,
       "properties": {
         "path": { "type": "string" },
         "schemaVersion": { "type": ["integer", "string"] },

@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## v6.0.0 - 2026-07-28
+
+- Hardened scan scope, command parsing, workflow coverage, sandbox degradation/capability claims, helper containment, config paths, manifest approval, and dependency/cache identities against repository-controlled bypasses.
+- Added a shared decision/policy layer, recursive monorepo discovery, real schema validation, base-ref policy drift checks, explicit manifest approval, runtime/dependency timeouts, bounded concurrent dependency review, and truthful scan coverage accounting.
+- Added CycloneDX 1.6 and SPDX 2.3 SBOM generation, multi-registry metadata/reputation review, ZIP inspection with expansion limits, artifact endpoint allowlisting, executable magic-byte detection, and configurable report/runtime behavior.
+- Added adversarial Node tests and Go helper tests for policy floors, parser bypasses, workflow order, baseline poisoning, degraded enforcement, monorepos, archives, cancellation, and platform capability reporting.
+- Added independent finding confidence/decision/enforcement fields, richer exact-finding explanations, a versioned public Node API, and content/policy/version-keyed scan caching with performance metrics.
+- Added granular expiring approvals with separately trusted public keys, Ed25519/RSA-compatible signatures, branch/commit/command/environment scope, distinct-signer quorum, and CI approval auditing.
+- Added runtime capability status reporting, CI rejection of degraded execution, and helper polling that terminates the supervised process tree when executable/archive artifacts appear during execution.
+- Added SARIF artifacts, GitHub annotations and summaries, base-ref validation, a composite GitHub Action, GitLab/Azure examples, explicit dependency-version comparison, lifecycle/bin delta detection, and bounded worker memory.
+- Removed obfuscated loader residue from the CLI bootstrap, added regression coverage for appended-loader variants, and made CI/release verify bootstrap integrity before loading project code.
+- Moved CI/release source scanning before dependency installation and changed clean installs to `npm ci --ignore-scripts`.
+- Documented the formal threat model, guarantee/non-claim contract, and phased implementation plan for the VS Code extension, dashboard, audit export/history, simulation, profiles, remote policy, IDE API, behavioral comparison, and dependency quarantine.
+
 ## v5.0.2 - 2026-05-23
 
 - Made `execfence guard disable` preview-only by default and require `--apply` before generated wrappers or marked agent rules are removed.

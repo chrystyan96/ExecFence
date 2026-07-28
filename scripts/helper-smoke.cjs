@@ -65,7 +65,7 @@ const sha256 = crypto.createHash('sha256').update(fs.readFileSync(binary)).diges
 
 assert.strictEqual(selfTest.ok, true, 'self-test must report ok:true');
 assert.strictEqual(selfTest.name, 'execfence-helper');
-assert.strictEqual(selfTest.version, '5.0.0');
+assert.strictEqual(selfTest.version, '6.0.0');
 assert.strictEqual(selfTest.platform, nodePlatform());
 assert.strictEqual(selfTest.arch, nodeArch());
 assert.strictEqual(selfTest.sha256, sha256);

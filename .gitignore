@@ -5,6 +5,5 @@ coverage/
 .execfence/reports/
 .execfence/cache/
 .execfence/quarantine/
-.execfence/manifest.json
 .omx/
 .DS_Store

@@ -1,0 +1,25 @@
+name: ExecFence
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  execfence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npx --yes execfence@6.0.0 ci --base-ref "origin/$EXECFENCE_BASE_REF" --sarif .execfence/reports/execfence.sarif --github-annotations --strict
+        env:
+          EXECFENCE_BASE_REF: ${{ github.base_ref || 'main' }}
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: .execfence/reports/execfence.sarif

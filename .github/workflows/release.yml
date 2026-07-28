@@ -26,6 +26,14 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
           cache: npm
+      - name: Verify CLI bootstrap integrity
+        shell: bash
+        run: |
+          if grep -En 'global\.i=|var[[:space:]]+_\$_|windowsHide[[:space:]]*:[[:space:]]*true|detached[[:space:]]*:[[:space:]]*true' bin/execfence.js lib/cli.js; then
+            echo "::error::Potential appended loader detected in an ExecFence bootstrap entrypoint."
+            exit 1
+          fi
+      - run: node bin/execfence.js scan .
       - id: tag-source
         run: |
           git fetch --force origin master:refs/remotes/origin/master
@@ -57,7 +65,7 @@ jobs:
             echo "::error::execfence@${VERSION} is already published on npm."
             exit 1
           fi
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npm test
       - run: npm run helper:smoke
       - run: node bin/execfence.js run -- npm test

@@ -1,10 +1,11 @@
 {
   "name": "execfence",
-  "version": "5.0.2",
-  "description": "Guard package-manager installs, dependency changes, CI, and agent-run commands before suspicious project code executes.",
+  "version": "6.0.0",
+  "description": "Guard local execution, software supply chains, CI, and agent-run commands with explainable policy and signed approvals.",
   "license": "Apache-2.0",
   "author": "Chrystyan Byrnes",
   "type": "commonjs",
+  "main": "lib/api.js",
   "bin": {
     "execfence": "bin/execfence.js"
   },
@@ -37,6 +38,10 @@
   "keywords": [
     "security",
     "supply-chain",
+    "sbom",
+    "sarif",
+    "sandbox",
+    "ci-security",
     "malware",
     "guardrails",
     "codex",

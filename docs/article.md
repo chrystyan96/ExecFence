@@ -275,7 +275,7 @@ Dependency-free also helps in CI and incident response:
 - easier `npm pack --dry-run` review
 - simpler use in temporary or suspicious workspaces
 
-ExecFence v5 introduces a real helper contract for Windows and Linux. The base scanner, runtime gate, reports, CI command, and skill remain usable without mandatory helper installation, but enforce mode only runs through a verified helper binary that passes `execfence-helper self-test`. Metadata-only helpers do not enable enforcement, and the npm package ships helper source for review/build rather than a prebuilt trusted helper binary.
+ExecFence v6 hardens the helper contract for Windows and Linux. The base scanner, runtime gate, reports, CI command, and skill remain usable without mandatory helper installation, but enforce mode only runs through a verified helper binary that passes `execfence-helper self-test`. Metadata-only helpers do not enable enforcement, and the npm package ships helper source for review/build rather than a prebuilt trusted helper binary.
 
 ## What The Scanner Inspects
 
@@ -319,15 +319,15 @@ ExecFence does not claim campaign attribution. It turns the lessons from those i
 
 ## Main Functional Areas
 
-### What Version 5 Adds
+### What Version 6 Adds
 
-Version 5 is the release that combines multi-ecosystem supply-chain coverage with the first real platform-helper sandbox contract.
+Version 6 combines multi-ecosystem supply-chain coverage with explicit decision, approval, runtime-capability, CI, and performance contracts.
 
 The supply-chain expansion is no longer npm-only. ExecFence now understands package-manager and runtime surfaces across npm/pnpm/Yarn/Bun, Python, Rust/Cargo, Go, JVM, .NET/NuGet, Composer/PHP, and Bundler/Ruby. That means `deps diff`, `deps review`, `ci`, `coverage`, `manifest`, `wire`, global package-manager shims, runtime dependency behavior audit, and reports all consume the same ecosystem adapter layer instead of treating non-npm ecosystems as partial side cases.
 
 The sandbox expansion is helper-backed. Enforce mode does not trust a config flag or metadata declaration. It requires a real Windows/Linux helper binary, hash verification, platform/arch match, provenance metadata, and a successful `execfence-helper self-test`. Only then can `execfence run --sandbox -- <command>` delegate execution to `execfence-helper run --policy <policy.json> -- <command>`.
 
-Version 5 keeps the same non-claim: ExecFence does not prove arbitrary third-party code benign. It blocks and records observable execution surfaces, dependency drift, helper capability proof, and runtime evidence. If a capability cannot be proven on the current host, it is reported as unsupported and strict/enforce blocks.
+Version 6 keeps the same non-claim: ExecFence does not prove arbitrary third-party code benign. It blocks and records observable execution surfaces, dependency drift, helper capability proof, approvals, and runtime evidence. If a capability cannot be proven on the current host, it is reported as unsupported and strict/enforce blocks.
 
 ### Essential Commands
 
@@ -399,17 +399,17 @@ Enforce mode is explicit:
 npx --yes execfence run --sandbox -- npm test
 ```
 
-If enforcement is unavailable, the command blocks before running. Downgrade requires explicit `--sandbox-mode audit` or `--allow-degraded`. In enforce mode, ExecFence writes a policy JSON and delegates execution to `execfence-helper run --policy <policy.json> -- <command>`; the helper emits JSONL events for spawn, deny, filesystem, process, network, new executable, and exit evidence.
+If enforcement is unavailable, the command blocks before running. A local downgrade requires explicit `--sandbox-mode audit` or `--allow-degraded --degraded-reason <reason>`; degraded execution is forbidden in CI. In enforce mode, ExecFence writes a policy JSON and delegates execution to `execfence-helper run --policy <policy.json> -- <command>`; the helper emits JSONL events for spawn, deny, terminate, filesystem, process, network, new executable, and exit evidence.
 
-The v5 helper contract is deliberately evidence-driven:
+The helper contract is deliberately evidence-driven:
 
 - `sandbox doctor` reports `helperVerified`, capability proof, unsupported capabilities, and the next action.
 - `install-helper --binary` registers a local helper binary, computes SHA-256, and immediately runs helper audit.
 - `helper audit` fails metadata-only helpers and helpers whose self-test cannot prove required capabilities.
 - `run --sandbox` uses the helper as the process launcher; deny events become blocking findings.
-- Windows and Linux are the v5 targets. Other platforms stay unsupported for enforce.
+- Windows and Linux are the current targets. Other platforms stay unsupported for enforce.
 
-The current unprivileged helper proves process supervision, Windows Job Object or Linux process-group child handling, and new executable artifact detection. Filesystem pre-read denial, sensitive-read denial, and outbound network blocking require a real platform broker/elevated capability before ExecFence will claim them.
+The current unprivileged helper proves root-process supervision and new-executable artifact detection. Windows can additionally prove Job Object child containment. Linux process-group cleanup is best-effort and is not claimed as complete child-process containment. Filesystem pre-read denial, sensitive-read denial, and outbound network blocking require a real platform broker/elevated capability before ExecFence will claim them.
 
 ### Execution Manifest And Coverage
 
@@ -592,7 +592,7 @@ Important files:
 - `.execfence/reports/`: JSON evidence reports
 - `.execfence/trust/`: reviewed trust stores
 - `.execfence/quarantine/`: metadata-only quarantine evidence
-- `.execfence/manifest.json`: execution-surface inventory
+- `.execfence/manifest.json`: explicitly approved, versioned execution-surface baseline used for base-ref CI comparison
 
 Reports are gitignored by default. A project can opt into versioning reports with `reportsGitignore: false`.
 

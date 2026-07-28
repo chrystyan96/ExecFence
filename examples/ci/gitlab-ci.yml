@@ -1,0 +1,10 @@
+execfence:
+  image: node:22
+  variables:
+    GIT_DEPTH: "0"
+  script:
+    - npx --yes execfence@6.0.0 ci --base-ref "origin/${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-$CI_DEFAULT_BRANCH}" --sarif .execfence/reports/execfence.sarif --strict
+  artifacts:
+    when: always
+    reports:
+      sast: .execfence/reports/execfence.sarif
