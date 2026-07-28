@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-07-28T19:43:22.755Z",
+  "generatedAt": "2026-07-28T19:44:31.402Z",
   "cwd": "C:\\Users\\chrys\\OneDrive\\Documentos\\Projetos\\ExecFence",
   "entrypoints": [
     {
@@ -482,8 +482,8 @@
     {
       "type": "github-action-run",
       "file": ".github/workflows/source-integrity.yml",
-      "name": "source-integrity#2: node bin/execfence.js scan ../candidate",
-      "command": "node bin/execfence.js scan ../candidate",
+      "name": "source-integrity#2: node ../trusted/bin/execfence.js scan .",
+      "command": "node ../trusted/bin/execfence.js scan .",
       "job": "source-integrity",
       "order": 1,
       "directGuarded": true,
@@ -494,7 +494,7 @@
       "coverageSource": "direct-execfence",
       "coverageReason": "The entrypoint command invokes ExecFence directly.",
       "guard": "execfence-run",
-      "id": "github-action-run:.github/workflows/source-integrity.yml:source-integrity#2: node bin/execfence.js scan ../candidate"
+      "id": "github-action-run:.github/workflows/source-integrity.yml:source-integrity#2: node ../trusted/bin/execfence.js scan ."
     },
     {
       "type": "go-entrypoint",
@@ -549,5 +549,5 @@
     "uncovered": 1,
     "guarded": 14
   },
-  "contentHash": "652b454c1657963bcfa2b53dc5fb469bd05b1392d12c1f9271736bc05c0bca11"
+  "contentHash": "c82cb15642f8b8a909d5d9f6998c137acd8393a0a01a528d5d81ec64bc70a6db"
 }

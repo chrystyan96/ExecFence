@@ -101,6 +101,7 @@ test('coverage requires a real ExecFence command invocation', () => {
 test('coverage recognizes the pre-execution source-integrity gate', () => {
   assert.equal(isDirectGuarded('node scripts/verify-source-integrity.cjs'), true);
   assert.equal(isDirectGuarded('npm run integrity:source'), true);
+  assert.equal(isDirectGuarded('node ../trusted/bin/execfence.js scan .'), true);
   assert.equal(isDirectGuarded('echo "node scripts/verify-source-integrity.cjs"'), false);
 });
 

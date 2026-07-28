@@ -66,5 +66,5 @@ jobs:
             fi
           done < <(git rev-list HEAD)
       - name: Scan candidate with trusted base
-        working-directory: trusted
-        run: node bin/execfence.js scan ../candidate
+        working-directory: candidate
+        run: node ../trusted/bin/execfence.js scan .
