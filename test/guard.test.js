@@ -102,7 +102,7 @@ test('guard enable apply wires project commands, CI, and agent rules', () => {
   assert.equal(status.entrypoints.unprotected, 0);
 });
 
-test('guard disable removes generated wrappers and preserves evidence/config directories', () => {
+test('guard disable previews removal without mutating by default', () => {
   const root = createGuardFixture();
   guardEnable(root, { apply: true });
   fs.writeFileSync(path.join(root, '.execfence', 'reports', 'sample.json'), '{}\n');
@@ -113,6 +113,27 @@ test('guard disable removes generated wrappers and preserves evidence/config dir
   const makefile = fs.readFileSync(path.join(root, 'Makefile'), 'utf8');
   const tasks = JSON.parse(fs.readFileSync(path.join(root, '.vscode', 'tasks.json'), 'utf8'));
 
+  assert.equal(result.dryRun, true);
+  assert.equal(pkg.scripts.test, 'execfence run -- node --test');
+  assert.match(workflow, /run: execfence run -- npm test/);
+  assert.match(makefile, /^build: guard$/m);
+  assert.equal(tasks.tasks[0].command, 'execfence run -- npm test');
+  assert.equal(fs.existsSync(path.join(root, 'AGENTS.md')), true);
+  assert.ok(result.changes.some((change) => change.type === 'agent-rule'));
+});
+
+test('guard disable apply removes generated wrappers and preserves evidence/config directories', () => {
+  const root = createGuardFixture();
+  guardEnable(root, { apply: true });
+  fs.writeFileSync(path.join(root, '.execfence', 'reports', 'sample.json'), '{}\n');
+
+  const result = guardDisable(root, { apply: true });
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  const workflow = fs.readFileSync(path.join(root, '.github', 'workflows', 'ci.yml'), 'utf8');
+  const makefile = fs.readFileSync(path.join(root, 'Makefile'), 'utf8');
+  const tasks = JSON.parse(fs.readFileSync(path.join(root, '.vscode', 'tasks.json'), 'utf8'));
+
+  assert.equal(result.dryRun, false);
   assert.equal(pkg.scripts.test, 'node --test');
   assert.equal(pkg.scripts.prepare, 'husky install');
   assert.equal(pkg.scripts['execfence:ci'], undefined);

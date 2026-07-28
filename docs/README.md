@@ -162,7 +162,7 @@ npx --yes execfence guard enable --apply
 npx --yes execfence guard status
 ```
 
-`guard enable` is a dry-run by default. It plans project config, script/workflow/task wrappers, CI wiring, local agent rules, and coverage status. `guard enable --apply` writes those changes. `guard disable` removes generated wrappers and marked agent rules while preserving reports, config, baselines, signatures, trust stores, and quarantine metadata.
+`guard enable` is a dry-run by default. It plans project config, script/workflow/task wrappers, CI wiring, local agent rules, and coverage status. `guard enable --apply` writes those changes. `guard disable` is also preview-only by default; `guard disable --apply` removes generated wrappers and marked agent rules while preserving reports, config, baselines, signatures, trust stores, and quarantine metadata.
 
 For first adoption in a noisy repository:
 
@@ -360,6 +360,7 @@ npx --yes execfence wire --apply
 npx --yes execfence guard enable
 npx --yes execfence guard enable --apply
 npx --yes execfence guard disable
+npx --yes execfence guard disable --apply
 npx --yes execfence guard status
 ```
 

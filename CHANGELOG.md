@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## v5.0.2 - 2026-05-23
+
+- Made `execfence guard disable` preview-only by default and require `--apply` before generated wrappers or marked agent rules are removed.
+- Updated CLI help, documentation, and guard tests for the safer disable flow.
+
 ## v5.0.1 - 2026-05-20
 
 - Extended `execfence scan` to audit committed MCP/tool configs and agent instructions that try to bypass ExecFence or security scans.
